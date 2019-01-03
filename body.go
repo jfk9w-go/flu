@@ -200,6 +200,7 @@ func XML(value interface{}) *BufferedBody {
 	}
 }
 
+// PlainText creates a plain/text body.
 func PlainText(text string) *BufferedBody {
 	return &BufferedBody{
 		value: &text,
