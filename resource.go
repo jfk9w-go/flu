@@ -73,15 +73,9 @@ func (r *FileSystemResource) Write() (io.WriteCloser, error) {
 	return os.Create(r.path)
 }
 
-// Size returns the file size.
-func (r *FileSystemResource) Size() (size int64, err error) {
-	stat, err := os.Stat(r.path)
-	if err != nil {
-		return
-	}
-
-	size = stat.Size()
-	return
+// Stat returns file info.
+func (r *FileSystemResource) Stat() (stat os.FileInfo, err error) {
+	return os.Stat(r.path)
 }
 
 // Delete deletes the file.
