@@ -7,156 +7,161 @@ import (
 	"net/url"
 )
 
-// BaseRequest allows to set basic http.Request properties.
-type BaseRequest struct {
+// Request allows to set basic http.Request properties.
+type Request struct {
 	client      *http.Client
 	endpoint    string
 	header      http.Header
 	basicAuth   [2]string
 	queryParams url.Values
+	body        BodyWriter
+	syncBody    bool
 }
 
 // Endpoint sets the request endpoint.
-func (base *BaseRequest) Endpoint(endpoint string) *BaseRequest {
-	base.endpoint = endpoint
-	return base
+func (r *Request) Endpoint(endpoint string) *Request {
+	r.endpoint = endpoint
+	return r
 }
 
 // Header sets a request header.
-func (base *BaseRequest) Header(key, value string) *BaseRequest {
-	base.header.Set(key, value)
-	return base
+func (r *Request) Header(key, value string) *Request {
+	r.header.Set(key, value)
+	return r
 }
 
 // BasicAuth allows to specify username and password to use in the basic authorization header.
-func (base *BaseRequest) BasicAuth(username, password string) *BaseRequest {
-	base.basicAuth[0] = username
-	base.basicAuth[1] = password
-	return base
+func (r *Request) BasicAuth(username, password string) *Request {
+	r.basicAuth[0] = username
+	r.basicAuth[1] = password
+	return r
 }
 
 // QueryParam sets a query parameter.
-func (base *BaseRequest) QueryParam(key, value string) *BaseRequest {
-	base.queryParams.Add(key, value)
-	return base
+func (r *Request) QueryParam(key, value string) *Request {
+	r.queryParams.Add(key, value)
+	return r
 }
 
-func (base *BaseRequest) exchange(req *http.Request) (*http.Response, error) {
+// ReadBodyFunc sets the request body.
+func (r *Request) Body(body BodyWriter) *Request {
+	r.body = body
+	return r
+}
+
+// Sync causes the request body to be loaded into a buffer before sending.
+func (r *Request) Sync() *Request {
+	r.syncBody = true
+	return r
+}
+
+// Get executes a GET request.
+func (r *Request) Get() *Response {
+	return r.retrieve(http.MethodGet)
+}
+
+// Head executes a HEAD request.
+func (r *Request) Head() *Response {
+	return r.retrieve(http.MethodHead)
+}
+
+// Post executes a POST request.
+func (r *Request) Post() *Response {
+	return r.retrieve(http.MethodPost)
+}
+
+// Put executes a PUT request.
+func (r *Request) Put() *Response {
+	return r.retrieve(http.MethodPut)
+}
+
+// Patch executes a PATCH request.
+func (r *Request) Patch() *Response {
+	return r.retrieve(http.MethodPatch)
+}
+
+// Delete executes a DELETE request.
+func (r *Request) Delete() *Response {
+	return r.retrieve(http.MethodDelete)
+}
+
+// Connect executes a CONNECT request.
+func (r *Request) Connect() *Response {
+	return r.retrieve(http.MethodConnect)
+}
+
+// Options executes a OPTIONS request.
+func (r *Request) Options() *Response {
+	return r.retrieve(http.MethodOptions)
+}
+
+// Trace executes a TRACE request.
+func (r *Request) Trace() *Response {
+	return r.retrieve(http.MethodTrace)
+}
+
+func (r *Request) retrieve(method string) *Response {
+	resp, err := r.exchange(method)
+	return &Response{err, resp}
+}
+
+func (r *Request) exchange(method string) (*http.Response, error) {
+	body, err := r.buildBody()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(method, r.endpoint, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.body != nil {
+		req.Header.Set("Content-Type", r.body.contentType())
+	}
+
 	if req.URL.RawQuery != "" {
 		req.URL.RawQuery += "&"
 	}
 
-	req.URL.RawQuery += base.queryParams.Encode()
+	req.URL.RawQuery += r.queryParams.Encode()
 	if len(req.Header) == 0 {
-		req.Header = base.header
+		req.Header = r.header
 	} else {
-		for key, values := range base.header {
+		for key, values := range r.header {
 			for _, value := range values {
 				req.Header.Add(key, value)
 			}
 		}
 	}
 
-	if base.basicAuth[0] != "" && base.basicAuth[1] != "" {
-		req.SetBasicAuth(base.basicAuth[0], base.basicAuth[1])
+	if r.basicAuth[0] != "" && r.basicAuth[1] != "" {
+		req.SetBasicAuth(r.basicAuth[0], r.basicAuth[1])
 	}
 
-	return base.client.Do(req)
+	return r.client.Do(req)
 }
 
-// GET returns a GET request builder.
-func (base *BaseRequest) GET() *GET {
-	return (*GET)(base)
-}
-
-// POST returns a POST request builder.
-func (base *BaseRequest) POST() *POST {
-	return &POST{base: base}
-}
-
-// GET is a fluent GET http.Request wrapper.
-type GET BaseRequest
-
-// Retrieve sends the request and waits for a response.
-func (get *GET) Retrieve() *Response {
-	resp, err := get.exchange()
-	return &Response{err, resp}
-}
-
-func (get *GET) exchange() (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, get.endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return (*BaseRequest)(get).exchange(req)
-}
-
-// POST is a fluent POST http.Request wrapper.
-type POST struct {
-	base *BaseRequest
-	body RequestBodyBuilder
-	sync bool
-}
-
-// Body sets the request body.
-func (post *POST) Body(body RequestBodyBuilder) *POST {
-	post.body = body
-	return post
-}
-
-// Sync causes the body to be loaded into a buffer first.
-func (post *POST) Sync() *POST {
-	post.sync = true
-	return post
-}
-
-// Retrieve sends the request and waits for a response.
-func (post *POST) Retrieve() *Response {
-	resp, err := post.exchange()
-	return &Response{err, resp}
-}
-
-func (post *POST) exchange() (resp *http.Response, err error) {
-	var body io.Reader
-	body, err = post.buildBody()
-	if err != nil {
-		return
-	}
-
-	var req *http.Request
-	req, err = http.NewRequest(http.MethodPost, post.base.endpoint, body)
-	if err != nil {
-		return
-	}
-
-	if post.body != nil {
-		req.Header.Set("Content-Type", post.body.contentType())
-	}
-
-	return post.base.exchange(req)
-}
-
-func (post *POST) buildBody() (body io.Reader, err error) {
-	if post.body != nil {
-		if post.sync {
-			var buf = new(bytes.Buffer)
-			err = post.body.build(buf)
+func (r *Request) buildBody() (io.Reader, error) {
+	if r.body != nil {
+		if r.syncBody {
+			buf := new(bytes.Buffer)
+			err := r.body.write(buf)
 			if err != nil {
-				return
+				return nil, err
 			}
 
-			body = buf
-			return
+			return buf, nil
 		}
 
-		var writer *io.PipeWriter
-		body, writer = io.Pipe()
+		body, writer := io.Pipe()
 		go func() {
-			var err = post.body.build(writer)
+			var err = r.body.write(writer)
 			_ = writer.CloseWithError(err)
 		}()
+
+		return body, nil
 	}
 
-	return
+	return nil, nil
 }

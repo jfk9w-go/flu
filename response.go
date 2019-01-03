@@ -1,11 +1,12 @@
 package flu
 
 import (
-	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // Response is a fluent response wrapper.
@@ -16,22 +17,22 @@ type Response struct {
 	resp  *http.Response
 }
 
-// ResponseProcessor allows to process a http.Response entirely.
-type ResponseProcessor func(*http.Response) error
+// ReadResponseFunc allows to process a http.Response entirely.
+type ReadResponseFunc func(*http.Response) error
 
-// ProcessResponse executes a ResponseProcessor if there was no previous error.
-func (r *Response) ProcessResponse(processor ResponseProcessor) *Response {
+// ReadResponseFunc executes a ReadResponseFunc if there was no previous error.
+func (r *Response) ReadResponseFunc(rf ReadResponseFunc) *Response {
 	if r.Error != nil {
 		return r
 	}
 
-	r.Error = processor(r.resp)
+	r.Error = rf(r.resp)
 	return r
 }
 
 // StatusCodes checks if a http.Response matches a status code from statusCodes.
 func (r *Response) StatusCodes(statusCodes ...int) *Response {
-	return r.ProcessResponse(func(resp *http.Response) error {
+	return r.ReadResponseFunc(func(resp *http.Response) error {
 		for _, expectedStatusCode := range statusCodes {
 			if expectedStatusCode == resp.StatusCode {
 				return nil
@@ -42,53 +43,54 @@ func (r *Response) StatusCodes(statusCodes ...int) *Response {
 	})
 }
 
-// BodyProcessor allows to process a http.Response body
-type BodyProcessor func(io.Reader) error
+// ReadBodyFunc allows to process a http.Response body
+type ReadBodyFunc func(io.Reader) error
 
-// ProcessBody executes a BodyProcessor.
+// ReadBodyFunc executes a ReadBodyFunc.
 // It closes the response body after the processing is done.
-func (r *Response) ProcessBody(processor BodyProcessor) *Response {
-	return r.ProcessResponse(func(resp *http.Response) error {
-		err := processor(resp.Body)
+func (r *Response) ReadBodyFunc(bf ReadBodyFunc) *Response {
+	return r.ReadResponseFunc(func(resp *http.Response) error {
+		err := bf(resp.Body)
 		_ = resp.Body.Close()
 		return err
 	})
 }
 
-// BufferedBodyProcessor allows to process a http.Response body contents as buffered bytes.
-type BufferedBodyProcessor func([]byte) error
+// ReadBody checks the content type of the response and reads the body.
+func (r *Response) ReadBody(body BodyReader) *Response {
+	return r.ReadResponseFunc(func(resp *http.Response) error {
+		contentType := resp.Header.Get("Content-Type")
+		if !strings.HasPrefix(contentType, body.contentType()) {
+			return fmt.Errorf("invalid content type: %s, expected: %s", contentType, body.contentType())
+		}
 
-// ProcessBufferedBody reads the response body to a byte array and executes a BufferedBodyProcessor.
-func (r *Response) ProcessBufferedBody(processor BufferedBodyProcessor) *Response {
-	return r.ProcessResponse(func(resp *http.Response) error {
+		err := body.read(resp.Body)
+		_ = resp.Body.Close()
+
+		return err
+	})
+}
+
+// ReadBytesFunc is a response body byte array processor.
+type ReadBytesFunc func([]byte) error
+
+// ReadBytesFunc executes a ReadBytesFunc.
+// It closes the response body after the body content has been read.
+func (r *Response) ReadBytesFunc(bf ReadBytesFunc) *Response {
+	return r.ReadResponseFunc(func(resp *http.Response) error {
 		data, err := ioutil.ReadAll(resp.Body)
 		_ = resp.Body.Close()
 		if err != nil {
 			return err
 		}
 
-		return processor(data)
-	})
-}
-
-// ReadJSON allows to parse a http.Response body as JSON.
-func (r *Response) ReadJSON(value interface{}) *Response {
-	return r.ProcessBufferedBody(func(data []byte) error {
-		return json.Unmarshal(data, value)
-	})
-}
-
-// ReadString allows to parse a http.Response body as a string.
-func (r *Response) ReadString(value *string) *Response {
-	return r.ProcessBufferedBody(func(data []byte) error {
-		*value = string(data)
-		return nil
+		return bf(data)
 	})
 }
 
 // ReadResource allows to save a http.Response body to a WriteResource as is.
 func (r *Response) ReadResource(resource WriteResource) *Response {
-	return r.ProcessBody(func(body io.Reader) error {
+	return r.ReadBodyFunc(func(body io.Reader) error {
 		writer, err := resource.Write()
 		if err != nil {
 			return err

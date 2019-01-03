@@ -66,8 +66,8 @@ func (c *Client) DefaultHeader(key, value string) *Client {
 }
 
 // NewRequest creates a Request builder.
-func (c *Client) NewRequest() *BaseRequest {
-	base := &BaseRequest{
+func (c *Client) NewRequest() *Request {
+	base := &Request{
 		client:      c.client,
 		header:      http.Header{},
 		queryParams: url.Values{},
