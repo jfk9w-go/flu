@@ -30,7 +30,7 @@ func NewClient(client *http.Client) *Client {
 
 // Cookies sets the client cookies.
 func (c *Client) Cookies(rawurl string, cookies ...*http.Cookie) *Client {
-	var url, err = url.Parse(rawurl)
+	url, err := url.Parse(rawurl)
 	if err != nil {
 		panic(err)
 	}
@@ -48,6 +48,39 @@ func (c *Client) Cookies(rawurl string, cookies ...*http.Cookie) *Client {
 	c.client.Jar.SetCookies(url, cookies)
 
 	return c
+}
+
+// ResponseHeaderTimeout allows to specify the response header timeout on the client.
+func (c *Client) ResponseHeaderTimeout(timeout time.Duration) *Client {
+	if timeout > 0 {
+		c.transport().ResponseHeaderTimeout = timeout
+	}
+
+	return c
+}
+
+// DefaultHeader allows to specify a default header set to every request.
+func (c *Client) DefaultHeader(key, value string) *Client {
+	c.defaultHeaders.Set(key, value)
+	return c
+}
+
+// NewRequest creates a Request builder.
+func (c *Client) NewRequest() *BaseRequest {
+	base := &BaseRequest{
+		client:      c.client,
+		header:      http.Header{},
+		queryParams: url.Values{},
+		basicAuth:   [2]string{"", ""},
+	}
+
+	for key, values := range c.defaultHeaders {
+		for _, value := range values {
+			base.Header(key, value)
+		}
+	}
+
+	return base
 }
 
 func (c *Client) transport() *http.Transport {
@@ -72,37 +105,4 @@ func (c *Client) transport() *http.Transport {
 	} else {
 		panic(fmt.Errorf("invalid transport type: %T", c.client.Transport))
 	}
-}
-
-// ResponseHeaderTimeout allows to specify the response header timeout on the client.
-func (c *Client) ResponseHeaderTimeout(timeout time.Duration) *Client {
-	if timeout > 0 {
-		c.transport().ResponseHeaderTimeout = timeout
-	}
-
-	return c
-}
-
-// DefaultHeader allows to specify a default header set to every request.
-func (c *Client) DefaultHeader(key, value string) *Client {
-	c.defaultHeaders.Set(key, value)
-	return c
-}
-
-// NewRequest creates a Request builder.
-func (c *Client) NewRequest() BaseRequest {
-	var base = BaseRequest{
-		client:      c.client,
-		header:      http.Header{},
-		queryParams: url.Values{},
-		basicAuth:   [2]string{"", ""},
-	}
-
-	for key, values := range c.defaultHeaders {
-		for _, value := range values {
-			base = base.Header(key, value)
-		}
-	}
-
-	return base
 }

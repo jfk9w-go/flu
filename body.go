@@ -61,13 +61,13 @@ type MultipartFormBodyBuilder struct {
 }
 
 // MultipartForm creates an empty multipart form.
-func MultipartForm() MultipartFormBodyBuilder {
+func MultipartForm() *MultipartFormBodyBuilder {
 	return MultipartFormWith(url.Values{})
 }
 
 // MultipartFormWith creates a multipart form with initial values.
-func MultipartFormWith(values url.Values) MultipartFormBodyBuilder {
-	return MultipartFormBodyBuilder{
+func MultipartFormWith(values url.Values) *MultipartFormBodyBuilder {
+	return &MultipartFormBodyBuilder{
 		values:    values,
 		resources: make(map[string]ReadResource),
 		boundary:  randomBoundary(),
@@ -84,18 +84,18 @@ func randomBoundary() string {
 }
 
 // Add adds a key-value pair to the form.
-func (b MultipartFormBodyBuilder) Add(key, value string) MultipartFormBodyBuilder {
+func (b *MultipartFormBodyBuilder) Add(key, value string) *MultipartFormBodyBuilder {
 	b.values.Add(key, value)
 	return b
 }
 
 // Resource adds a Resource to the form.
-func (b MultipartFormBodyBuilder) Resource(key string, resource ReadResource) MultipartFormBodyBuilder {
+func (b *MultipartFormBodyBuilder) Resource(key string, resource ReadResource) *MultipartFormBodyBuilder {
 	b.resources[key] = resource
 	return b
 }
 
-func (b MultipartFormBodyBuilder) build(body io.Writer) (err error) {
+func (b *MultipartFormBodyBuilder) build(body io.Writer) (err error) {
 	var writer = multipart.NewWriter(body)
 	err = writer.SetBoundary(b.boundary)
 	if err != nil {
@@ -139,21 +139,21 @@ func (b MultipartFormBodyBuilder) build(body io.Writer) (err error) {
 	return
 }
 
-func (b MultipartFormBodyBuilder) contentType() string {
+func (b *MultipartFormBodyBuilder) contentType() string {
 	return "multipart/form-data; boundary=" + b.boundary
 }
 
-// JsonBodyBuilder represents a request body sent as a JSON.
-type JsonBodyBuilder struct {
+// JSONBodyBuilder represents a request body sent as a JSON.
+type JSONBodyBuilder struct {
 	value interface{}
 }
 
-// Json creates a request JSON body from a value.
-func Json(value interface{}) *JsonBodyBuilder {
-	return &JsonBodyBuilder{value}
+// JSON creates a request JSON body from a value.
+func JSON(value interface{}) *JSONBodyBuilder {
+	return &JSONBodyBuilder{value}
 }
 
-func (b JsonBodyBuilder) build(body io.Writer) error {
+func (b *JSONBodyBuilder) build(body io.Writer) error {
 	var data, err = json.Marshal(b.value)
 	if err != nil {
 		return err
@@ -163,20 +163,20 @@ func (b JsonBodyBuilder) build(body io.Writer) error {
 	return err
 }
 
-func (b JsonBodyBuilder) contentType() string {
+func (b *JSONBodyBuilder) contentType() string {
 	return "application/json"
 }
 
-type XmlBodyBuilder struct {
+type XMLBodyBuilder struct {
 	value interface{}
 }
 
-// Xml creates a request XML body from a value.
-func Xml(value interface{}) XmlBodyBuilder {
-	return XmlBodyBuilder{value}
+// XML creates a request XML body from a value.
+func XML(value interface{}) *XMLBodyBuilder {
+	return &XMLBodyBuilder{value}
 }
 
-func (b XmlBodyBuilder) build(body io.Writer) error {
+func (b *XMLBodyBuilder) build(body io.Writer) error {
 	var data, err = xml.Marshal(b.value)
 	if err != nil {
 		return err
@@ -186,6 +186,6 @@ func (b XmlBodyBuilder) build(body io.Writer) error {
 	return err
 }
 
-func (b XmlBodyBuilder) contentType() string {
+func (b *XMLBodyBuilder) contentType() string {
 	return "application/xml"
 }

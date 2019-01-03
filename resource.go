@@ -73,6 +73,7 @@ func (r FileSystemResource) Write() (io.WriteCloser, error) {
 	return os.Create(r.path)
 }
 
+// Size returns the file size.
 func (r FileSystemResource) Size() (size int64, err error) {
 	stat, err := os.Stat(r.path)
 	if err != nil {
@@ -88,6 +89,7 @@ func (r FileSystemResource) Delete() error {
 	return os.Remove(r.path)
 }
 
+// Path returns the file path.
 func (r FileSystemResource) Path() string {
 	return r.path
 }

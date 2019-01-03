@@ -7,47 +7,41 @@ import (
 	"net/url"
 )
 
-// Request is a fluent http.Request wrapper.
-type Request interface {
-	// Retrieve executes the request and returns a Response.
-	Retrieve() Response
-}
-
 // BaseRequest allows to set basic http.Request properties.
 type BaseRequest struct {
+	client      *http.Client
 	endpoint    string
 	header      http.Header
 	basicAuth   [2]string
 	queryParams url.Values
-	client      *http.Client
 }
 
 // Endpoint sets the request endpoint.
-func (base BaseRequest) Endpoint(endpoint string) BaseRequest {
+func (base *BaseRequest) Endpoint(endpoint string) *BaseRequest {
 	base.endpoint = endpoint
 	return base
 }
 
 // Header sets a request header.
-func (base BaseRequest) Header(key, value string) BaseRequest {
+func (base *BaseRequest) Header(key, value string) *BaseRequest {
 	base.header.Set(key, value)
 	return base
 }
 
 // BasicAuth allows to specify username and password to use in the basic authorization header.
-func (base BaseRequest) BasicAuth(username, password string) BaseRequest {
+func (base *BaseRequest) BasicAuth(username, password string) *BaseRequest {
 	base.basicAuth[0] = username
 	base.basicAuth[1] = password
 	return base
 }
 
 // QueryParam sets a query parameter.
-func (base BaseRequest) QueryParam(key, value string) BaseRequest {
+func (base *BaseRequest) QueryParam(key, value string) *BaseRequest {
 	base.queryParams.Add(key, value)
 	return base
 }
 
-func (base BaseRequest) exchange(req *http.Request) (*http.Response, error) {
+func (base *BaseRequest) exchange(req *http.Request) (*http.Response, error) {
 	if req.URL.RawQuery != "" {
 		req.URL.RawQuery += "&"
 	}
@@ -70,52 +64,60 @@ func (base BaseRequest) exchange(req *http.Request) (*http.Response, error) {
 	return base.client.Do(req)
 }
 
-// Get returns a GET request builder.
-func (base BaseRequest) Get() GetRequest {
-	return GetRequest(base)
+// GET returns a GET request builder.
+func (base *BaseRequest) GET() *GET {
+	return (*GET)(base)
 }
 
-// Post returns a POST request builder.
-func (base BaseRequest) Post() PostRequest {
-	return PostRequest{base: base}
+// POST returns a POST request builder.
+func (base *BaseRequest) POST() *POST {
+	return &POST{base: base}
 }
 
-// GetRequest is a fluent GET http.Request wrapper.
-type GetRequest BaseRequest
+// GET is a fluent GET http.Request wrapper.
+type GET BaseRequest
 
-func (get GetRequest) exchange() (*http.Response, error) {
-	var req, err = http.NewRequest(http.MethodGet, get.endpoint, nil)
+// Retrieve sends the request and waits for a response.
+func (get *GET) Retrieve() *Response {
+	resp, err := get.exchange()
+	return &Response{err, resp}
+}
+
+func (get *GET) exchange() (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, get.endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return BaseRequest(get).exchange(req)
+	return (*BaseRequest)(get).exchange(req)
 }
 
-func (get GetRequest) Retrieve() Response {
-	var resp, err = get.exchange()
-	return Response{resp, err}
-}
-
-// PostRequest is a fluent POST http.Request wrapper.
-type PostRequest struct {
-	base BaseRequest
+// POST is a fluent POST http.Request wrapper.
+type POST struct {
+	base *BaseRequest
 	body RequestBodyBuilder
 	sync bool
 }
 
 // Body sets the request body.
-func (post PostRequest) Body(body RequestBodyBuilder) PostRequest {
+func (post *POST) Body(body RequestBodyBuilder) *POST {
 	post.body = body
 	return post
 }
 
-func (post PostRequest) Sync() PostRequest {
+// Sync causes the body to be loaded into a buffer first.
+func (post *POST) Sync() *POST {
 	post.sync = true
 	return post
 }
 
-func (post PostRequest) exchange() (resp *http.Response, err error) {
+// Retrieve sends the request and waits for a response.
+func (post *POST) Retrieve() *Response {
+	resp, err := post.exchange()
+	return &Response{err, resp}
+}
+
+func (post *POST) exchange() (resp *http.Response, err error) {
 	var body io.Reader
 	body, err = post.buildBody()
 	if err != nil {
@@ -135,7 +137,7 @@ func (post PostRequest) exchange() (resp *http.Response, err error) {
 	return post.base.exchange(req)
 }
 
-func (post PostRequest) buildBody() (body io.Reader, err error) {
+func (post *POST) buildBody() (body io.Reader, err error) {
 	if post.body != nil {
 		if post.sync {
 			var buf = new(bytes.Buffer)
@@ -157,9 +159,4 @@ func (post PostRequest) buildBody() (body io.Reader, err error) {
 	}
 
 	return
-}
-
-func (post PostRequest) Retrieve() Response {
-	var resp, err = post.exchange()
-	return Response{resp, err}
 }
