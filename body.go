@@ -13,14 +13,14 @@ import (
 
 // BodyWriter is a request body writer.
 type BodyWriter interface {
-	write(io.Writer) error
-	contentType() string
+	Write(io.Writer) error
+	ContentType() string
 }
 
 // BodyReader is a response body reader.
 type BodyReader interface {
-	read(io.Reader) error
-	contentType() string
+	Read(io.Reader) error
+	ContentType() string
 }
 
 // FormBody represents a form body.
@@ -51,13 +51,13 @@ func (b FormBody) AddAll(key string, values ...string) FormBody {
 	return b
 }
 
-func (b FormBody) write(body io.Writer) (err error) {
-	_, err = io.WriteString(body, url.Values(b).Encode())
-	return
+func (b FormBody) ContentType() string {
+	return "application/x-www-form-urlencoded"
 }
 
-func (b FormBody) contentType() string {
-	return "application/x-www-form-urlencoded"
+func (b FormBody) Write(body io.Writer) (err error) {
+	_, err = io.WriteString(body, url.Values(b).Encode())
+	return
 }
 
 // MultipartFormBody represents a form sent as multipart/form-data.
@@ -102,7 +102,11 @@ func (b *MultipartFormBody) Resource(key string, resource ReadResource) *Multipa
 	return b
 }
 
-func (b *MultipartFormBody) write(body io.Writer) (err error) {
+func (b *MultipartFormBody) ContentType() string {
+	return "multipart/form-data; boundary=" + b.boundary
+}
+
+func (b *MultipartFormBody) Write(body io.Writer) (err error) {
 	var writer = multipart.NewWriter(body)
 	err = writer.SetBoundary(b.boundary)
 	if err != nil {
@@ -146,19 +150,31 @@ func (b *MultipartFormBody) write(body io.Writer) (err error) {
 	return
 }
 
-func (b *MultipartFormBody) contentType() string {
-	return "multipart/form-data; boundary=" + b.boundary
-}
+type (
+	// MarshalFunc is a function used to marshal a value to byte array.
+	MarshalFunc func(interface{}) ([]byte, error)
+
+	// UnmarshalFunc is a function used to unmarshal a value from byte array.
+	UnmarshalFunc func([]byte, interface{}) error
+)
 
 type BufferedBody struct {
-	value     interface{}
-	marshal   func(interface{}) ([]byte, error)
-	unmarshal func([]byte, interface{}) error
-	ctype     string
+	contentType   string
+	marshalFunc   MarshalFunc
+	unmarshalFunc UnmarshalFunc
+	value         interface{}
 }
 
-func (b *BufferedBody) write(body io.Writer) error {
-	data, err := b.marshal(b.value)
+func Body(contentType string, marshalFunc MarshalFunc, unmarshalFunc UnmarshalFunc, value interface{}) *BufferedBody {
+	return &BufferedBody{contentType, marshalFunc, unmarshalFunc, value}
+}
+
+func (b *BufferedBody) ContentType() string {
+	return b.contentType
+}
+
+func (b *BufferedBody) Write(body io.Writer) error {
+	data, err := b.marshalFunc(b.value)
 	if err != nil {
 		return err
 	}
@@ -167,50 +183,46 @@ func (b *BufferedBody) write(body io.Writer) error {
 	return err
 }
 
-func (b *BufferedBody) contentType() string {
-	return b.ctype
-}
-
-func (b *BufferedBody) read(body io.Reader) error {
+func (b *BufferedBody) Read(body io.Reader) error {
 	data, err := ioutil.ReadAll(body)
 	if err != nil {
 		return err
 	}
 
-	return b.unmarshal(data, b.value)
+	return b.unmarshalFunc(data, b.value)
 }
 
 // JSON creates an JSON body for a value.
 func JSON(value interface{}) *BufferedBody {
 	return &BufferedBody{
-		value:     value,
-		marshal:   json.Marshal,
-		unmarshal: json.Unmarshal,
-		ctype:     "application/json",
+		contentType:   "application/json",
+		value:         value,
+		marshalFunc:   json.Marshal,
+		unmarshalFunc: json.Unmarshal,
 	}
 }
 
 // XML creates an XML body for a value.
 func XML(value interface{}) *BufferedBody {
 	return &BufferedBody{
-		value:     value,
-		marshal:   xml.Marshal,
-		unmarshal: xml.Unmarshal,
-		ctype:     "application/xml",
+		contentType:   "application/xml",
+		value:         value,
+		marshalFunc:   xml.Marshal,
+		unmarshalFunc: xml.Unmarshal,
 	}
 }
 
 // PlainText creates a plain/text body.
 func PlainText(text string) *BufferedBody {
 	return &BufferedBody{
-		value: &text,
-		marshal: func(value interface{}) ([]byte, error) {
+		contentType: "text/plain",
+		marshalFunc: func(value interface{}) ([]byte, error) {
 			return []byte(*value.(*string)), nil
 		},
-		unmarshal: func(data []byte, value interface{}) error {
+		unmarshalFunc: func(data []byte, value interface{}) error {
 			*value.(*string) = string(data)
 			return nil
 		},
-		ctype: "text/plain",
+		value: &text,
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"path"
 )
 
-// ReadResource provides an access to a resource which can be read.
+// ReadResource provides an access to a resource which can be Read.
 type ReadResource interface {
 	Read() (io.ReadCloser, error)
 }
@@ -17,14 +17,14 @@ type WriteResource interface {
 	Write() (io.WriteCloser, error)
 }
 
-// ReadWriteResource provides full read-write access to a resource.
+// ReadWriteResource provides full Read-Write access to a resource.
 type ReadWriteResource interface {
 	ReadResource
 	WriteResource
 }
 
 // RawReadResource is a wrapper around io.ReadCloser.
-// Provides "read-once" semantics.
+// Provides "Read-once" semantics.
 type RawReadResource struct {
 	rc io.ReadCloser
 }

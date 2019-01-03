@@ -117,7 +117,7 @@ func (r *Request) exchange(method string) (*http.Response, error) {
 	}
 
 	if r.body != nil {
-		req.Header.Set("Content-Type", r.body.contentType())
+		req.Header.Set("Content-Type", r.body.ContentType())
 	}
 
 	if req.URL.RawQuery != "" {
@@ -146,7 +146,7 @@ func (r *Request) buildBody() (io.Reader, error) {
 	if r.body != nil {
 		if r.syncBody {
 			buf := new(bytes.Buffer)
-			err := r.body.write(buf)
+			err := r.body.Write(buf)
 			if err != nil {
 				return nil, err
 			}
@@ -156,7 +156,7 @@ func (r *Request) buildBody() (io.Reader, error) {
 
 		body, writer := io.Pipe()
 		go func() {
-			var err = r.body.write(writer)
+			var err = r.body.Write(writer)
 			_ = writer.CloseWithError(err)
 		}()
 

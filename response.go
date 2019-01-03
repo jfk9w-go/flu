@@ -60,11 +60,11 @@ func (r *Response) ReadBodyFunc(bf ReadBodyFunc) *Response {
 func (r *Response) ReadBody(body BodyReader) *Response {
 	return r.ReadResponseFunc(func(resp *http.Response) error {
 		contentType := resp.Header.Get("Content-Type")
-		if !strings.HasPrefix(contentType, body.contentType()) {
-			return fmt.Errorf("invalid content type: %s, expected: %s", contentType, body.contentType())
+		if !strings.HasPrefix(contentType, body.ContentType()) {
+			return fmt.Errorf("invalid content type: %s, expected: %s", contentType, body.ContentType())
 		}
 
-		err := body.read(resp.Body)
+		err := body.Read(resp.Body)
 		_ = resp.Body.Close()
 
 		return err
@@ -75,7 +75,7 @@ func (r *Response) ReadBody(body BodyReader) *Response {
 type ReadBytesFunc func([]byte) error
 
 // ReadBytesFunc executes a ReadBytesFunc.
-// It closes the response body after the body content has been read.
+// It closes the response body after the body content has been Read.
 func (r *Response) ReadBytesFunc(bf ReadBytesFunc) *Response {
 	return r.ReadResponseFunc(func(resp *http.Response) error {
 		data, err := ioutil.ReadAll(resp.Body)
