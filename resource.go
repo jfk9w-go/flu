@@ -54,18 +54,18 @@ type FileSystemResource struct {
 }
 
 // NewFileSystemResource creates a FileSystemResource with the specified path.
-func NewFileSystemResource(path string) FileSystemResource {
-	return FileSystemResource{path}
+func NewFileSystemResource(path string) *FileSystemResource {
+	return &FileSystemResource{path}
 }
 
 // Read opens the file for reading.
-func (r FileSystemResource) Read() (io.ReadCloser, error) {
+func (r *FileSystemResource) Read() (io.ReadCloser, error) {
 	return os.Open(r.path)
 }
 
 // Write creates (with all the intermediary folders) or truncates the file
 // and opens it for writing.
-func (r FileSystemResource) Write() (io.WriteCloser, error) {
+func (r *FileSystemResource) Write() (io.WriteCloser, error) {
 	if err := os.MkdirAll(path.Dir(r.path), os.ModePerm); err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (r FileSystemResource) Write() (io.WriteCloser, error) {
 }
 
 // Size returns the file size.
-func (r FileSystemResource) Size() (size int64, err error) {
+func (r *FileSystemResource) Size() (size int64, err error) {
 	stat, err := os.Stat(r.path)
 	if err != nil {
 		return
@@ -85,11 +85,11 @@ func (r FileSystemResource) Size() (size int64, err error) {
 }
 
 // Delete deletes the file.
-func (r FileSystemResource) Delete() error {
-	return os.Remove(r.path)
+func (r *FileSystemResource) Delete() error {
+	return os.RemoveAll(r.path)
 }
 
 // Path returns the file path.
-func (r FileSystemResource) Path() string {
+func (r *FileSystemResource) Path() string {
 	return r.path
 }
