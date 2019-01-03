@@ -1,4 +1,4 @@
-# flu
+# flu [![GoDoc](https://godoc.org/github.com/jfk9w-go/flu?status.svg)](https://godoc.org/github.com/jfk9w-go/flu) [![Build Status](https://travis-ci.org/jfk9w-go/flu.svg?branch=master)](https://travis-ci.org/jfk9w-go/flu)
 
 **flu** is a fluent net/http client wrapper. It provides
 a developer with a convenience suite for writing HTTP clients.
