@@ -14,6 +14,10 @@ type Post struct {
 	Body   string `json:"body"`
 }
 
+func (p *Post) String() string {
+	return fmt.Sprintf("ID: %d\nUserID: %d\nTitle: %s\nBody: %s\n", p.ID, p.UserID, p.Title, p.Body)
+}
+
 // ExampleGet provides an example of performing a GET request.
 // See https://jsonplaceholder.typicode.com/ for endpoint description.
 func ExampleGet() {
@@ -29,16 +33,13 @@ func ExampleGet() {
 		return
 	}
 
-	fmt.Printf("UserID: %d\n", post.UserID)
-	fmt.Printf("ID: %d\n", post.ID)
-	fmt.Printf("Title: %s\n", post.Title)
-	fmt.Printf("ReadBodyFunc: %s\n", post.Body)
+	fmt.Println(post)
 
 	// Output:
-	// UserID: 1
 	// ID: 1
+	// UserID: 1
 	// Title: sunt aut facere repellat provident occaecati excepturi optio reprehenderit
-	// ReadBodyFunc: quia et suscipit
+	// Body: quia et suscipit
 	// suscipit recusandae consequuntur expedita et cum
 	// reprehenderit molestiae ut ut quas totam
 	// nostrum rerum est autem sunt rem eveniet architecto
@@ -86,16 +87,13 @@ func ExamplePost() {
 		return
 	}
 
-	fmt.Printf("ID: %d\n", post.ID)
-	fmt.Printf("UserID: %d\n", post.UserID)
-	fmt.Printf("Title: %s\n", post.Title)
-	fmt.Printf("ReadBodyFunc: %s\n", post.Body)
+	fmt.Println(post)
 
 	// Output:
 	// ID: 101
 	// UserID: 10
 	// Title: lorem ipsum
-	// ReadBodyFunc: body
+	// Body: body
 }
 
 // ExamplePut provides an example of performing a PUT request.
@@ -118,16 +116,13 @@ func ExamplePut() {
 		return
 	}
 
-	fmt.Printf("ID: %d\n", post.ID)
-	fmt.Printf("UserID: %d\n", post.UserID)
-	fmt.Printf("Title: %s\n", post.Title)
-	fmt.Printf("ReadBodyFunc: %s\n", post.Body)
+	fmt.Println(post)
 
 	// Output:
 	// ID: 1
 	// UserID: 10
 	// Title: lorem ipsum
-	// ReadBodyFunc: body
+	// Body: body
 }
 
 // ExamplePatch provides an example of performing a PATCH request.
@@ -150,16 +145,13 @@ func ExamplePatch() {
 		return
 	}
 
-	fmt.Printf("ID: %d\n", post.ID)
-	fmt.Printf("UserID: %d\n", post.UserID)
-	fmt.Printf("Title: %s\n", post.Title)
-	fmt.Printf("ReadBodyFunc: %s\n", post.Body)
+	fmt.Println(post)
 
 	// Output:
 	// ID: 1
 	// UserID: 10
 	// Title: lorem ipsum
-	// ReadBodyFunc: body
+	// Body: body
 }
 
 // ExampleDelete provides an example of performing a DELETE request.
