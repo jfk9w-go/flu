@@ -18,9 +18,9 @@ func (p *Post) String() string {
 	return fmt.Sprintf("ID: %d\nUserID: %d\nTitle: %s\nBody: %s\n", p.ID, p.UserID, p.Title, p.Body)
 }
 
-// ExampleGet provides an example of performing a GET request.
+// Example_Get provides an example of performing a GET request.
 // See https://jsonplaceholder.typicode.com/ for endpoint description.
-func ExampleGet() {
+func Example_Get() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
 		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
@@ -45,9 +45,9 @@ func ExampleGet() {
 	// nostrum rerum est autem sunt rem eveniet architecto
 }
 
-// ExampleGet provides an example of performing a Get request.
+// Example_Get_QueryParams provides an example of performing a GET request with query parameters.
 // See https://jsonplaceholder.typicode.com/ for endpoint description.
-func ExampleGetQueryParams() {
+func Example_Get_QueryParams() {
 	posts := make([]Post, 0)
 	err := NewClient(nil).NewRequest().
 		Endpoint("https://jsonplaceholder.typicode.com/posts").
@@ -67,9 +67,9 @@ func ExampleGetQueryParams() {
 	// Posts count: 10
 }
 
-// ExamplePost provides an example of performing a POST request.
+// Example_Post provides an example of performing a POST request.
 // See https://jsonplaceholder.typicode.com/ for endpoint description.
-func ExamplePost() {
+func Example_Post() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
 		Endpoint("https://jsonplaceholder.typicode.com/posts").
@@ -96,9 +96,9 @@ func ExamplePost() {
 	// Body: body
 }
 
-// ExamplePut provides an example of performing a PUT request.
+// Example_Put provides an example of performing a PUT request.
 // See https://jsonplaceholder.typicode.com/ for endpoint description.
-func ExamplePut() {
+func Example_Put() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
 		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
@@ -125,9 +125,9 @@ func ExamplePut() {
 	// Body: body
 }
 
-// ExamplePatch provides an example of performing a PATCH request.
+// Example_Patch provides an example of performing a PATCH request.
 // See https://jsonplaceholder.typicode.com/ for endpoint description.
-func ExamplePatch() {
+func Example_Patch() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
 		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
@@ -154,9 +154,9 @@ func ExamplePatch() {
 	// Body: body
 }
 
-// ExampleDelete provides an example of performing a DELETE request.
+// Example_Delete provides an example of performing a DELETE request.
 // See https://jsonplaceholder.typicode.com/ for endpoint description.
-func ExampleDelete() {
+func Example_Delete() {
 	resp := new(string)
 	err := NewClient(nil).NewRequest().
 		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
