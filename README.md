@@ -3,7 +3,13 @@
 **flu** is a fluent net/http client wrapper. It provides
 a developer with a convenience suite for writing HTTP clients.
 
-#### Example
+## Installation
+Simply install the package via go get:
+```bash
+go get -u github.com/jfk9w-go/flu
+```
+
+## Example
 ```go
 package main
 
