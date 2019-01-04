@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/jfk9w-go/lego/json"
 )
 
 // ReadResource provides an access to a resource which can be Read.
@@ -86,4 +88,16 @@ func (r *FileSystemResource) Delete() error {
 // Path returns the file path.
 func (r *FileSystemResource) Path() string {
 	return r.path
+}
+
+// For use in JSON config structs.
+func (r *FileSystemResource) UnmarshalJSON(data []byte) error {
+	path := new(json.Path)
+	err := path.UnmarshalJSON(data)
+	if err != nil {
+		return err
+	}
+
+	r.path = path.Value()
+	return nil
 }
