@@ -158,22 +158,25 @@ type (
 	UnmarshalFunc func([]byte, interface{}) error
 )
 
-type BufferedBody struct {
+// BodyReadWriter is a generic request body writer and response body reader.
+// A value is marshalled to and unmarshalled from a byte array.
+type BodyReadWriter struct {
 	contentType   string
 	marshalFunc   MarshalFunc
 	unmarshalFunc UnmarshalFunc
 	value         interface{}
 }
 
-func Body(contentType string, marshalFunc MarshalFunc, unmarshalFunc UnmarshalFunc, value interface{}) *BufferedBody {
-	return &BufferedBody{contentType, marshalFunc, unmarshalFunc, value}
+// ReadWriteBody creates a new instance of a BodyReadWriter.
+func ReadWriteBody(contentType string, marshalFunc MarshalFunc, unmarshalFunc UnmarshalFunc, value interface{}) *BodyReadWriter {
+	return &BodyReadWriter{contentType, marshalFunc, unmarshalFunc, value}
 }
 
-func (b *BufferedBody) ContentType() string {
+func (b *BodyReadWriter) ContentType() string {
 	return b.contentType
 }
 
-func (b *BufferedBody) Write(body io.Writer) error {
+func (b *BodyReadWriter) Write(body io.Writer) error {
 	data, err := b.marshalFunc(b.value)
 	if err != nil {
 		return err
@@ -183,7 +186,7 @@ func (b *BufferedBody) Write(body io.Writer) error {
 	return err
 }
 
-func (b *BufferedBody) Read(body io.Reader) error {
+func (b *BodyReadWriter) Read(body io.Reader) error {
 	data, err := ioutil.ReadAll(body)
 	if err != nil {
 		return err
@@ -193,8 +196,8 @@ func (b *BufferedBody) Read(body io.Reader) error {
 }
 
 // JSON creates an JSON body for a value.
-func JSON(value interface{}) *BufferedBody {
-	return &BufferedBody{
+func JSON(value interface{}) *BodyReadWriter {
+	return &BodyReadWriter{
 		contentType:   "application/json",
 		value:         value,
 		marshalFunc:   json.Marshal,
@@ -203,8 +206,8 @@ func JSON(value interface{}) *BufferedBody {
 }
 
 // XML creates an XML body for a value.
-func XML(value interface{}) *BufferedBody {
-	return &BufferedBody{
+func XML(value interface{}) *BodyReadWriter {
+	return &BodyReadWriter{
 		contentType:   "application/xml",
 		value:         value,
 		marshalFunc:   xml.Marshal,
@@ -213,16 +216,15 @@ func XML(value interface{}) *BufferedBody {
 }
 
 // PlainText creates a plain/text body.
-func PlainText(text string) *BufferedBody {
-	return &BufferedBody{
+func PlainText(value *string) *BodyReadWriter {
+	return &BodyReadWriter{
 		contentType: "text/plain",
-		marshalFunc: func(value interface{}) ([]byte, error) {
-			return []byte(*value.(*string)), nil
+		marshalFunc: func(interface{}) ([]byte, error) {
+			return []byte(*value), nil
 		},
-		unmarshalFunc: func(data []byte, value interface{}) error {
-			*value.(*string) = string(data)
+		unmarshalFunc: func(data []byte, _ interface{}) error {
+			*value = string(data)
 			return nil
 		},
-		value: &text,
 	}
 }

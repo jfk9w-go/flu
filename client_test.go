@@ -157,15 +157,12 @@ func Example_Patch() {
 // Example_Delete provides an example of performing a DELETE request.
 // See https://jsonplaceholder.typicode.com/ for endpoint description.
 func Example_Delete() {
-	resp := new(string)
+	resp := ""
 	err := NewClient(nil).NewRequest().
 		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
 		Delete().
 		StatusCodes(http.StatusOK).
-		ReadBytesFunc(func(data []byte) error {
-			*resp = string(data)
-			return nil
-		}).
+		ReadBodyFunc(PlainText(&resp).Read).
 		Error
 
 	if err != nil {
@@ -173,7 +170,7 @@ func Example_Delete() {
 		return
 	}
 
-	fmt.Printf("Response: %s\n", *resp)
+	fmt.Printf("Response: %s\n", resp)
 
 	// Output:
 	// Response: {}
