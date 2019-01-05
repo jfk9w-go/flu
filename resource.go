@@ -62,7 +62,7 @@ func (r FileSystemResource) Read() (io.ReadCloser, error) {
 
 // Write creates (with all the intermediary folders) or truncates the file
 // and opens it for writing.
-func (r *FileSystemResource) Write() (io.WriteCloser, error) {
+func (r FileSystemResource) Write() (io.WriteCloser, error) {
 	if err := os.MkdirAll(path.Dir(r.Path()), os.ModePerm); err != nil {
 		return nil, err
 	}
