@@ -69,6 +69,7 @@ func (c *Client) DefaultHeader(key, value string) *Client {
 func (c *Client) NewRequest() *Request {
 	base := &Request{
 		client:      c.client,
+		method:      http.MethodGet,
 		header:      http.Header{},
 		queryParams: url.Values{},
 		basicAuth:   [2]string{"", ""},

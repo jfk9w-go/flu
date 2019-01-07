@@ -10,6 +10,7 @@ import (
 // Request allows to set basic http.Request properties.
 type Request struct {
 	client      *http.Client
+	method      string
 	endpoint    string
 	header      http.Header
 	basicAuth   [2]string
@@ -55,63 +56,73 @@ func (r *Request) Sync() *Request {
 	return r
 }
 
-// Get executes a GET request.
-func (r *Request) Get() *Response {
-	return r.retrieve(http.MethodGet)
+// Get sets the HTTP method to GET.
+func (r *Request) Get() *Request {
+	r.method = http.MethodGet
+	return r
 }
 
-// Head executes a HEAD request.
-func (r *Request) Head() *Response {
-	return r.retrieve(http.MethodHead)
+// Head sets the HTTP method to HEAD.
+func (r *Request) Head() *Request {
+	r.method = http.MethodHead
+	return r
 }
 
-// Post executes a POST request.
-func (r *Request) Post() *Response {
-	return r.retrieve(http.MethodPost)
+// Post sets the HTTP method to POST.
+func (r *Request) Post() *Request {
+	r.method = http.MethodPost
+	return r
 }
 
-// Put executes a PUT request.
-func (r *Request) Put() *Response {
-	return r.retrieve(http.MethodPut)
+// Put sets the HTTP method to PUT.
+func (r *Request) Put() *Request {
+	r.method = http.MethodPut
+	return r
 }
 
-// Patch executes a PATCH request.
-func (r *Request) Patch() *Response {
-	return r.retrieve(http.MethodPatch)
+// Patch sets the HTTP method to PATCH.
+func (r *Request) Patch() *Request {
+	r.method = http.MethodPatch
+	return r
 }
 
-// Delete executes a DELETE request.
-func (r *Request) Delete() *Response {
-	return r.retrieve(http.MethodDelete)
+// Delete sets the HTTP method to DELETE.
+func (r *Request) Delete() *Request {
+	r.method = http.MethodDelete
+	return r
 }
 
-// Connect executes a CONNECT request.
-func (r *Request) Connect() *Response {
-	return r.retrieve(http.MethodConnect)
+// Connect sets the HTTP method to CONNECT.
+func (r *Request) Connect() *Request {
+	r.method = http.MethodConnect
+	return r
 }
 
-// Options executes a OPTIONS request.
-func (r *Request) Options() *Response {
-	return r.retrieve(http.MethodOptions)
+// Options sets the HTTP method to OPTIONS.
+func (r *Request) Options() *Request {
+	r.method = http.MethodOptions
+	return r
 }
 
-// Trace executes a TRACE request.
-func (r *Request) Trace() *Response {
-	return r.retrieve(http.MethodTrace)
+// Trace sets the HTTP method to TRACE.
+func (r *Request) Trace() *Request {
+	r.method = http.MethodTrace
+	return r
 }
 
-func (r *Request) retrieve(method string) *Response {
-	resp, err := r.exchange(method)
+// Execute executes the request and returns a response.
+func (r *Request) Execute() *Response {
+	resp, err := r.exchange()
 	return &Response{err, resp}
 }
 
-func (r *Request) exchange(method string) (*http.Response, error) {
+func (r *Request) exchange() (*http.Response, error) {
 	body, err := r.buildBody()
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, r.endpoint, body)
+	req, err := http.NewRequest(r.method, r.endpoint, body)
 	if err != nil {
 		return nil, err
 	}

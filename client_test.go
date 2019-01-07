@@ -23,8 +23,9 @@ func (p *Post) String() string {
 func Example_Get() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
-		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
 		Get().
+		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
+		Execute().
 		ReadBody(JSON(post)).
 		Error
 
@@ -50,9 +51,10 @@ func Example_Get() {
 func Example_Get_QueryParams() {
 	posts := make([]Post, 0)
 	err := NewClient(nil).NewRequest().
+		Get().
 		Endpoint("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
-		Get().
+		Execute().
 		ReadBody(JSON(&posts)).
 		Error
 
@@ -72,13 +74,14 @@ func Example_Get_QueryParams() {
 func Example_Post() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
+		Post().
 		Endpoint("https://jsonplaceholder.typicode.com/posts").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Post().
+		Execute().
 		ReadBody(JSON(post)).
 		Error
 
@@ -101,13 +104,14 @@ func Example_Post() {
 func Example_Put() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
+		Put().
 		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Put().
+		Execute().
 		ReadBody(JSON(post)).
 		Error
 
@@ -130,13 +134,14 @@ func Example_Put() {
 func Example_Patch() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
+		Patch().
 		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Patch().
+		Execute().
 		ReadBody(JSON(post)).
 		Error
 
@@ -159,8 +164,9 @@ func Example_Patch() {
 func Example_Delete() {
 	resp := ""
 	err := NewClient(nil).NewRequest().
-		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
 		Delete().
+		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
+		Execute().
 		StatusCodes(http.StatusOK).
 		ReadBodyFunc(PlainText(&resp).Read).
 		Error
