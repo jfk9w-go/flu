@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/url"
+
+	"github.com/google/go-querystring/query"
 )
 
 // BodyWriter is a request body writer.
@@ -24,26 +26,36 @@ type BodyReader interface {
 }
 
 // FormBody represents a form body.
-type FormBody url.Values
-
-// Form creates an empty form.
-func Form() FormBody {
-	return FormWith(url.Values{})
+type FormBody struct {
+	value  interface{}
+	values url.Values
 }
 
-// FormWith creates a form with initial values.
-func FormWith(values url.Values) FormBody {
-	return FormBody(values)
+// Form creates an empty form.
+func Form(value ...interface{}) *FormBody {
+	form := new(FormBody)
+	if len(value) == 1 {
+		form.value = value[0]
+	}
+
+	return form
+}
+
+// FormWithValues creates a form with initial values.
+func FormWithValues(values url.Values) *FormBody {
+	return &FormBody{
+		values: values,
+	}
 }
 
 // Add adds a key-value pair to the form.
-func (b FormBody) Add(key, value string) FormBody {
-	url.Values(b).Add(key, value)
+func (b *FormBody) Add(key, value string) *FormBody {
+	b.values.Add(key, value)
 	return b
 }
 
 // AddAll adds a key with multiple values to the form.
-func (b FormBody) AddAll(key string, values ...string) FormBody {
+func (b *FormBody) AddAll(key string, values ...string) *FormBody {
 	for _, value := range values {
 		b.Add(key, value)
 	}
@@ -51,18 +63,46 @@ func (b FormBody) AddAll(key string, values ...string) FormBody {
 	return b
 }
 
-func (b FormBody) ContentType() string {
+func (b *FormBody) ContentType() string {
 	return "application/x-www-form-urlencoded"
 }
 
-func (b FormBody) Write(body io.Writer) (err error) {
-	_, err = io.WriteString(body, url.Values(b).Encode())
-	return
+func (b *FormBody) Write(body io.Writer) error {
+	values, err := b._values()
+	if err != nil {
+		return err
+	}
+
+	_, err = io.WriteString(body, values.Encode())
+	return err
+}
+
+func (b *FormBody) _values() (url.Values, error) {
+	if b.value != nil {
+		values, err := query.Values(b.value)
+		if err != nil {
+			return nil, err
+		}
+
+		for k, vs := range b.values {
+			for i, v := range vs {
+				if i == 0 {
+					values.Set(k, v)
+				} else {
+					values.Add(k, v)
+				}
+			}
+		}
+	} else if b.values != nil {
+		return b.values, nil
+	}
+
+	return nil, nil
 }
 
 // MultipartFormBody represents a form sent as multipart/form-data.
 type MultipartFormBody struct {
-	values    url.Values
+	*FormBody
 	resources map[string]ReadResource
 	boundary  string
 }
@@ -75,7 +115,7 @@ func MultipartForm() *MultipartFormBody {
 // MultipartFormWith creates a multipart form with initial values.
 func MultipartFormWith(values url.Values) *MultipartFormBody {
 	return &MultipartFormBody{
-		values:    values,
+		FormBody:  FormWithValues(values),
 		resources: make(map[string]ReadResource),
 		boundary:  randomBoundary(),
 	}
@@ -92,7 +132,12 @@ func randomBoundary() string {
 
 // Add adds a key-value pair to the form.
 func (b *MultipartFormBody) Add(key, value string) *MultipartFormBody {
-	b.values.Add(key, value)
+	b.FormBody.Add(key, value)
+	return b
+}
+
+func (b *MultipartFormBody) AddAll(key string, values ...string) *MultipartFormBody {
+	b.FormBody.AddAll(key, values...)
 	return b
 }
 
@@ -106,48 +151,53 @@ func (b *MultipartFormBody) ContentType() string {
 	return "multipart/form-data; boundary=" + b.boundary
 }
 
-func (b *MultipartFormBody) Write(body io.Writer) (err error) {
-	var writer = multipart.NewWriter(body)
+func (b *MultipartFormBody) Write(body io.Writer) error {
+	values, err := b._values()
+	if err != nil {
+		return err
+	}
+
+	writer := multipart.NewWriter(body)
 	err = writer.SetBoundary(b.boundary)
 	if err != nil {
-		return
+		return err
 	}
 
 	for key, resource := range b.resources {
 		var part io.Writer
 		part, err = writer.CreateFormFile(key, key)
 		if err != nil {
-			return
+			return err
 		}
 
 		var reader io.ReadCloser
 		reader, err = resource.Read()
 		if err != nil {
-			return
+			return err
 		}
 
 		_, err = io.Copy(part, reader)
 		_ = reader.Close()
 		if err != nil {
-			return
+			return err
 		}
 	}
 
-	for key, values := range b.values {
-		for _, value := range values {
-			err = writer.WriteField(key, value)
+	for k, vs := range values {
+		for _, value := range vs {
+			err = writer.WriteField(k, value)
 			if err != nil {
-				return
+				return err
 			}
 		}
 	}
 
 	err = writer.Close()
 	if err != nil {
-		return
+		return err
 	}
 
-	return
+	return err
 }
 
 type (
