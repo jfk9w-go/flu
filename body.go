@@ -122,17 +122,21 @@ type MultipartFormBody struct {
 }
 
 // MultipartForm creates an empty multipart form.
-func MultipartForm() *MultipartFormBody {
-	return MultipartFormValues(url.Values{})
+func MultipartForm(values ...interface{}) *MultipartFormBody {
+	return MultipartFormFrom(Form(values...))
+}
+
+func MultipartFormFrom(formBody *FormBody) *MultipartFormBody {
+	return &MultipartFormBody{
+		FormBody:  formBody,
+		resources: make(map[string]ReadResource),
+		boundary:  randomBoundary(),
+	}
 }
 
 // MultipartFormValues creates a multipart form with initial values.
 func MultipartFormValues(values url.Values) *MultipartFormBody {
-	return &MultipartFormBody{
-		FormBody:  FormValues(values),
-		resources: make(map[string]ReadResource),
-		boundary:  randomBoundary(),
-	}
+	return MultipartFormFrom(FormValues(values))
 }
 
 func randomBoundary() string {
