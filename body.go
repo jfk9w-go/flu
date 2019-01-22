@@ -41,8 +41,8 @@ func Form(value ...interface{}) *FormBody {
 	return form
 }
 
-// FormWithValues creates a form with initial values.
-func FormWithValues(values url.Values) *FormBody {
+// FormValues creates a form with initial values.
+func FormValues(values url.Values) *FormBody {
 	return &FormBody{
 		values: values,
 	}
@@ -123,13 +123,13 @@ type MultipartFormBody struct {
 
 // MultipartForm creates an empty multipart form.
 func MultipartForm() *MultipartFormBody {
-	return MultipartFormWith(url.Values{})
+	return MultipartFormValues(url.Values{})
 }
 
-// MultipartFormWith creates a multipart form with initial values.
-func MultipartFormWith(values url.Values) *MultipartFormBody {
+// MultipartFormValues creates a multipart form with initial values.
+func MultipartFormValues(values url.Values) *MultipartFormBody {
 	return &MultipartFormBody{
-		FormBody:  FormWithValues(values),
+		FormBody:  FormValues(values),
 		resources: make(map[string]ReadResource),
 		boundary:  randomBoundary(),
 	}
