@@ -63,6 +63,20 @@ func (b *FormBody) AddAll(key string, values ...string) *FormBody {
 	return b
 }
 
+func (b *FormBody) AddValues(values url.Values) *FormBody {
+	for k, vs := range values {
+		for i, v := range vs {
+			if i == 0 {
+				b.values.Set(k, v)
+			} else {
+				b.values.Add(k, v)
+			}
+		}
+	}
+
+	return b
+}
+
 func (b *FormBody) ContentType() string {
 	return "application/x-www-form-urlencoded"
 }
@@ -127,6 +141,7 @@ func randomBoundary() string {
 	if err != nil {
 		panic(err)
 	}
+
 	return fmt.Sprintf("%x", buf[:])
 }
 
@@ -138,6 +153,11 @@ func (b *MultipartFormBody) Add(key, value string) *MultipartFormBody {
 
 func (b *MultipartFormBody) AddAll(key string, values ...string) *MultipartFormBody {
 	b.FormBody.AddAll(key, values...)
+	return b
+}
+
+func (b *MultipartFormBody) AddValues(values url.Values) *MultipartFormBody {
+	b.FormBody.AddValues(values)
 	return b
 }
 
