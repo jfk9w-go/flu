@@ -27,8 +27,9 @@ type BodyReader interface {
 
 // FormBody represents a form body.
 type FormBody struct {
-	value  interface{}
-	values url.Values
+	value     interface{}
+	values    url.Values
+	multipart *MultipartFormBody
 }
 
 // Form creates an empty form.
@@ -78,7 +79,11 @@ func (b *FormBody) AddValues(values url.Values) *FormBody {
 }
 
 func (b *FormBody) Multipart() *MultipartFormBody {
-	return MultipartFormFrom(b)
+	if b.multipart == nil {
+		b.multipart = MultipartFormFrom(b)
+	}
+
+	return b.multipart
 }
 
 func (b *FormBody) ContentType() string {
