@@ -77,6 +77,10 @@ func (b *FormBody) AddValues(values url.Values) *FormBody {
 	return b
 }
 
+func (b *FormBody) Multipart() *MultipartFormBody {
+	return MultipartFormFrom(b)
+}
+
 func (b *FormBody) ContentType() string {
 	return "application/x-www-form-urlencoded"
 }
