@@ -120,6 +120,8 @@ func (b *FormBody) _values() (url.Values, error) {
 				}
 			}
 		}
+
+		return values, nil
 	} else if b.values != nil {
 		return b.values, nil
 	}
