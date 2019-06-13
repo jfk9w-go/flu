@@ -13,16 +13,20 @@ import (
 	"github.com/google/go-querystring/query"
 )
 
+type Body interface {
+	ContentType() string
+}
+
 // BodyWriter is a request body writer.
 type BodyWriter interface {
+	Body
 	Write(io.Writer) error
-	ContentType() string
 }
 
 // BodyReader is a response body reader.
 type BodyReader interface {
+	Body
 	Read(io.Reader) error
-	ContentType() string
 }
 
 // FormBody represents a form body.
@@ -241,10 +245,10 @@ func (b *MultipartFormBody) Write(body io.Writer) error {
 
 type (
 	// MarshalFunc is a function used to marshal a value to byte array.
-	MarshalFunc func(interface{}) ([]byte, error)
+	MarshalFunc = func(interface{}) ([]byte, error)
 
 	// UnmarshalFunc is a function used to unmarshal a value from byte array.
-	UnmarshalFunc func([]byte, interface{}) error
+	UnmarshalFunc = func([]byte, interface{}) error
 )
 
 // BodyReadWriter is a generic request body writer and response body reader.

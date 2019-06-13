@@ -16,7 +16,7 @@ type Client struct {
 }
 
 // NewClient wraps the passed http.Client.
-// If client == nil, creates a new http.Client
+// If httpClient == nil, creates a new http.Client
 func NewClient(client *http.Client) *Client {
 	if client == nil {
 		client = new(http.Client)
@@ -28,7 +28,7 @@ func NewClient(client *http.Client) *Client {
 	}
 }
 
-// Cookies sets the client cookies.
+// Cookies sets the httpClient cookies.
 func (c *Client) Cookies(rawurl string, cookies ...*http.Cookie) *Client {
 	url, err := url.Parse(rawurl)
 	if err != nil {
@@ -50,7 +50,7 @@ func (c *Client) Cookies(rawurl string, cookies ...*http.Cookie) *Client {
 	return c
 }
 
-// ResponseHeaderTimeout allows to specify the response header timeout on the client.
+// ResponseHeaderTimeout allows to specify the response headers timeout on the httpClient.
 func (c *Client) ResponseHeaderTimeout(timeout time.Duration) *Client {
 	if timeout > 0 {
 		c.transport().ResponseHeaderTimeout = timeout
@@ -59,7 +59,7 @@ func (c *Client) ResponseHeaderTimeout(timeout time.Duration) *Client {
 	return c
 }
 
-// DefaultHeader allows to specify a default header set to every request.
+// DefaultHeader allows to specify a default headers set to every request.
 func (c *Client) DefaultHeader(key, value string) *Client {
 	c.defaultHeaders.Set(key, value)
 	return c
@@ -68,16 +68,16 @@ func (c *Client) DefaultHeader(key, value string) *Client {
 // NewRequest creates a Request builder.
 func (c *Client) NewRequest() *Request {
 	base := &Request{
-		client:      c.client,
+		httpClient:  c.client,
 		method:      http.MethodGet,
-		header:      http.Header{},
+		headers:     http.Header{},
 		queryParams: url.Values{},
 		basicAuth:   [2]string{"", ""},
 	}
 
 	for key, values := range c.defaultHeaders {
 		for _, value := range values {
-			base.Header(key, value)
+			base.SetHeader(key, value)
 		}
 	}
 
@@ -86,11 +86,10 @@ func (c *Client) NewRequest() *Request {
 
 func (c *Client) transport() *http.Transport {
 	if c.client.Transport == nil {
-		var transport = &http.Transport{
+		transport := &http.Transport{
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,
-				DualStack: true,
 			}).DialContext,
 			MaxIdleConns:          100,
 			IdleConnTimeout:       90 * time.Second,

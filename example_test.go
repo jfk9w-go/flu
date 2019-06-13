@@ -18,14 +18,14 @@ func (p *Post) String() string {
 	return fmt.Sprintf("ID: %d\nUserID: %d\nTitle: %s\nBody: %s\n", p.ID, p.UserID, p.Title, p.Body)
 }
 
-// Example_Get provides an example of performing a GET request.
-// See https://jsonplaceholder.typicode.com/ for endpoint description.
-func Example_Get() {
+// Example_GET provides an example of performing a GET request.
+// See https://jsonplaceholder.typicode.com/ for resource description.
+func Example_GET() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
-		Get().
-		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
-		Execute().
+		GET().
+		Resource("https://jsonplaceholder.typicode.com/posts/1").
+		Send().
 		ReadBody(JSON(post)).
 		Error
 
@@ -46,15 +46,15 @@ func Example_Get() {
 	// nostrum rerum est autem sunt rem eveniet architecto
 }
 
-// Example_Get_QueryParams provides an example of performing a GET request with query parameters.
-// See https://jsonplaceholder.typicode.com/ for endpoint description.
-func Example_Get_QueryParams() {
+// Example_GET_QueryParams provides an example of performing a GET request with query parameters.
+// See https://jsonplaceholder.typicode.com/ for resource description.
+func Example_GET_QueryParams() {
 	posts := make([]Post, 0)
 	err := NewClient(nil).NewRequest().
-		Get().
-		Endpoint("https://jsonplaceholder.typicode.com/posts").
+		GET().
+		Resource("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
-		Execute().
+		Send().
 		ReadBody(JSON(&posts)).
 		Error
 
@@ -69,19 +69,19 @@ func Example_Get_QueryParams() {
 	// Posts count: 10
 }
 
-// Example_Post provides an example of performing a POST request.
-// See https://jsonplaceholder.typicode.com/ for endpoint description.
-func Example_Post() {
+// Example_POST provides an example of performing a POST request.
+// See https://jsonplaceholder.typicode.com/ for resource description.
+func Example_POST() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
-		Post().
-		Endpoint("https://jsonplaceholder.typicode.com/posts").
+		POST().
+		Resource("https://jsonplaceholder.typicode.com/posts").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Execute().
+		Send().
 		ReadBody(JSON(post)).
 		Error
 
@@ -99,19 +99,19 @@ func Example_Post() {
 	// Body: body
 }
 
-// Example_Put provides an example of performing a PUT request.
-// See https://jsonplaceholder.typicode.com/ for endpoint description.
-func Example_Put() {
+// Example_PUT provides an example of performing a PUT request.
+// See https://jsonplaceholder.typicode.com/ for resource description.
+func Example_PUT() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
-		Put().
-		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
+		PUT().
+		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Execute().
+		Send().
 		ReadBody(JSON(post)).
 		Error
 
@@ -129,19 +129,19 @@ func Example_Put() {
 	// Body: body
 }
 
-// Example_Patch provides an example of performing a PATCH request.
-// See https://jsonplaceholder.typicode.com/ for endpoint description.
-func Example_Patch() {
+// Example_PATCH provides an example of performing a PATCH request.
+// See https://jsonplaceholder.typicode.com/ for resource description.
+func Example_PATCH() {
 	post := new(Post)
 	err := NewClient(nil).NewRequest().
-		Patch().
-		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
+		PATCH().
+		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Execute().
+		Send().
 		ReadBody(JSON(post)).
 		Error
 
@@ -159,15 +159,15 @@ func Example_Patch() {
 	// Body: body
 }
 
-// Example_Delete provides an example of performing a DELETE request.
-// See https://jsonplaceholder.typicode.com/ for endpoint description.
-func Example_Delete() {
+// Example_DELETE provides an example of performing a DELETE request.
+// See https://jsonplaceholder.typicode.com/ for resource description.
+func Example_DELETE() {
 	resp := ""
 	err := NewClient(nil).NewRequest().
-		Delete().
-		Endpoint("https://jsonplaceholder.typicode.com/posts/1").
-		Execute().
-		StatusCodes(http.StatusOK).
+		DELETE().
+		Resource("https://jsonplaceholder.typicode.com/posts/1").
+		Send().
+		CheckStatusCode(http.StatusOK).
 		ReadBodyFunc(PlainText(&resp).Read).
 		Error
 
