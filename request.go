@@ -24,7 +24,6 @@ type Request struct {
 // Resource sets the request resource.
 func (req *Request) Resource(resource string) *Request {
 	req.resource = resource
-	context.Background()
 	return req
 }
 
