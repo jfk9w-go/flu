@@ -2,6 +2,7 @@ package flu
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"log"
 	"net/http"
@@ -23,6 +24,7 @@ type Request struct {
 // Resource sets the request resource.
 func (req *Request) Resource(resource string) *Request {
 	req.resource = resource
+	context.Background()
 	return req
 }
 
@@ -151,11 +153,16 @@ func (req *Request) TRACE() *Request {
 
 // Send executes the request and returns a response.
 func (req *Request) Send() *Response {
-	resp, err := req.send()
+	resp, err := req.send(nil)
 	return &Response{err, resp}
 }
 
-func (req *Request) send() (*http.Response, error) {
+func (req *Request) SendWithContext(ctx context.Context) *Response {
+	resp, err := req.send(ctx)
+	return &Response{err, resp}
+}
+
+func (req *Request) send(ctx context.Context) (*http.Response, error) {
 	body, err := req.buildBody()
 	if err != nil {
 		return nil, err
@@ -187,6 +194,10 @@ func (req *Request) send() (*http.Response, error) {
 
 	if req.basicAuth[0] != "" && req.basicAuth[1] != "" {
 		httpReq.SetBasicAuth(req.basicAuth[0], req.basicAuth[1])
+	}
+
+	if ctx != nil {
+		httpReq = httpReq.WithContext(ctx)
 	}
 
 	return req.httpClient.Do(httpReq)
