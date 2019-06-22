@@ -53,6 +53,15 @@ func FormValues(values url.Values) *FormBody {
 	}
 }
 
+func (b *FormBody) Set(key, value string) *FormBody {
+	if b.values == nil {
+		b.values = url.Values{}
+	}
+
+	b.values.Set(key, value)
+	return b
+}
+
 // Add adds a key-value pair to the form.
 func (b *FormBody) Add(key, value string) *FormBody {
 	if b.values == nil {
