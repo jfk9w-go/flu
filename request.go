@@ -2,151 +2,211 @@ package flu
 
 import (
 	"bytes"
+	"context"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 )
 
 // Request allows to set basic http.Request properties.
 type Request struct {
-	client      *http.Client
-	endpoint    string
-	header      http.Header
+	httpClient  *http.Client
+	method      string
+	resource    string
+	headers     http.Header
 	basicAuth   [2]string
 	queryParams url.Values
 	body        BodyWriter
-	syncBody    bool
+	useBuffer   bool
 }
 
-// Endpoint sets the request endpoint.
-func (r *Request) Endpoint(endpoint string) *Request {
-	r.endpoint = endpoint
-	return r
+// Resource sets the request resource.
+func (req *Request) Resource(resource string) *Request {
+	req.resource = resource
+	return req
 }
 
-// Header sets a request header.
-func (r *Request) Header(key, value string) *Request {
-	r.header.Set(key, value)
-	return r
+// AddHeader adds a request header.
+func (req *Request) AddHeader(key, value string) *Request {
+	req.headers.Add(key, value)
+	return req
 }
 
-// BasicAuth allows to specify username and password to use in the basic authorization header.
-func (r *Request) BasicAuth(username, password string) *Request {
-	r.basicAuth[0] = username
-	r.basicAuth[1] = password
-	return r
+// SetHeader sets a request header.
+func (req *Request) SetHeader(key, value string) *Request {
+	req.headers.Set(key, value)
+	return req
+}
+
+// AddHeaders adds request headers.
+// keyValues is an array of key-value pairs and must have even length.
+func (req *Request) AddHeaders(keyValues ...string) *Request {
+	keyValuesLength := len(keyValues)
+	if keyValuesLength%2 == 1 {
+		log.Fatal("keyValues length must be even, got ", keyValuesLength)
+	}
+
+	for i := 0; i < keyValuesLength; i += 2 {
+		key, value := keyValues[i], keyValues[i+1]
+		req.AddHeader(key, value)
+	}
+
+	return req
+}
+
+// SetHeaders sets request headers.
+// keyValues is an array of key-value pairs and must have even length.
+func (req *Request) SetHeaders(keyValues ...string) *Request {
+	keyValuesLength := len(keyValues)
+	if keyValuesLength%2 == 1 {
+		log.Fatal("keyValues length must be even, got ", keyValuesLength)
+	}
+
+	for i := 0; i < keyValuesLength; i += 2 {
+		key, value := keyValues[i], keyValues[i+1]
+		req.SetHeader(key, value)
+	}
+
+	return req
+}
+
+// BasicAuth allows to specify username and password to use in the basic authorization headers.
+func (req *Request) BasicAuth(username, password string) *Request {
+	req.basicAuth[0] = username
+	req.basicAuth[1] = password
+	return req
 }
 
 // QueryParam sets a query parameter.
-func (r *Request) QueryParam(key, value string) *Request {
-	r.queryParams.Add(key, value)
-	return r
+func (req *Request) QueryParam(key, value string) *Request {
+	req.queryParams.Add(key, value)
+	return req
 }
 
-// ReadBodyFunc sets the request body.
-func (r *Request) Body(body BodyWriter) *Request {
-	r.body = body
-	return r
+// Body sets the request body.
+func (req *Request) Body(body BodyWriter) *Request {
+	req.body = body
+	return req
 }
 
-// Sync causes the request body to be loaded into a buffer before sending.
-func (r *Request) Sync() *Request {
-	r.syncBody = true
-	return r
+// Buffer causes the request body to be loaded into a buffer before sending.
+func (req *Request) Buffer() *Request {
+	req.useBuffer = true
+	return req
 }
 
-// Get executes a GET request.
-func (r *Request) Get() *Response {
-	return r.retrieve(http.MethodGet)
+// GET sets the HTTP method to GET.
+func (req *Request) GET() *Request {
+	req.method = http.MethodGet
+	return req
 }
 
-// Head executes a HEAD request.
-func (r *Request) Head() *Response {
-	return r.retrieve(http.MethodHead)
+// HEAD sets the HTTP method to HEAD.
+func (req *Request) HEAD() *Request {
+	req.method = http.MethodHead
+	return req
 }
 
-// Post executes a POST request.
-func (r *Request) Post() *Response {
-	return r.retrieve(http.MethodPost)
+// POST sets the HTTP method to POST.
+func (req *Request) POST() *Request {
+	req.method = http.MethodPost
+	return req
 }
 
-// Put executes a PUT request.
-func (r *Request) Put() *Response {
-	return r.retrieve(http.MethodPut)
+// PUT sets the HTTP method to PUT.
+func (req *Request) PUT() *Request {
+	req.method = http.MethodPut
+	return req
 }
 
-// Patch executes a PATCH request.
-func (r *Request) Patch() *Response {
-	return r.retrieve(http.MethodPatch)
+// PATCH sets the HTTP method to PATCH.
+func (req *Request) PATCH() *Request {
+	req.method = http.MethodPatch
+	return req
 }
 
-// Delete executes a DELETE request.
-func (r *Request) Delete() *Response {
-	return r.retrieve(http.MethodDelete)
+// DELETE sets the HTTP method to DELETE.
+func (req *Request) DELETE() *Request {
+	req.method = http.MethodDelete
+	return req
 }
 
-// Connect executes a CONNECT request.
-func (r *Request) Connect() *Response {
-	return r.retrieve(http.MethodConnect)
+// CONNECT sets the HTTP method to CONNECT.
+func (req *Request) CONNECT() *Request {
+	req.method = http.MethodConnect
+	return req
 }
 
-// Options executes a OPTIONS request.
-func (r *Request) Options() *Response {
-	return r.retrieve(http.MethodOptions)
+// OPTIONS sets the HTTP method to OPTIONS.
+func (req *Request) OPTIONS() *Request {
+	req.method = http.MethodOptions
+	return req
 }
 
-// Trace executes a TRACE request.
-func (r *Request) Trace() *Response {
-	return r.retrieve(http.MethodTrace)
+// TRACE sets the HTTP method to TRACE.
+func (req *Request) TRACE() *Request {
+	req.method = http.MethodTrace
+	return req
 }
 
-func (r *Request) retrieve(method string) *Response {
-	resp, err := r.exchange(method)
+// Send executes the request and returns a response.
+func (req *Request) Send() *Response {
+	resp, err := req.send(nil)
 	return &Response{err, resp}
 }
 
-func (r *Request) exchange(method string) (*http.Response, error) {
-	body, err := r.buildBody()
+func (req *Request) SendWithContext(ctx context.Context) *Response {
+	resp, err := req.send(ctx)
+	return &Response{err, resp}
+}
+
+func (req *Request) send(ctx context.Context) (*http.Response, error) {
+	body, err := req.buildBody()
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, r.endpoint, body)
+	httpReq, err := http.NewRequest(req.method, req.resource, body)
 	if err != nil {
 		return nil, err
 	}
 
-	if r.body != nil {
-		req.Header.Set("Content-Type", r.body.ContentType())
+	if req.body != nil {
+		httpReq.Header.Set("Content-Type", req.body.ContentType())
 	}
 
-	if req.URL.RawQuery != "" {
-		req.URL.RawQuery += "&"
+	if httpReq.URL.RawQuery != "" {
+		httpReq.URL.RawQuery += "&"
 	}
 
-	req.URL.RawQuery += r.queryParams.Encode()
-	if len(req.Header) == 0 {
-		req.Header = r.header
+	httpReq.URL.RawQuery += req.queryParams.Encode()
+	if len(httpReq.Header) == 0 {
+		httpReq.Header = req.headers
 	} else {
-		for key, values := range r.header {
+		for key, values := range req.headers {
 			for _, value := range values {
-				req.Header.Add(key, value)
+				httpReq.Header.Add(key, value)
 			}
 		}
 	}
 
-	if r.basicAuth[0] != "" && r.basicAuth[1] != "" {
-		req.SetBasicAuth(r.basicAuth[0], r.basicAuth[1])
+	if req.basicAuth[0] != "" && req.basicAuth[1] != "" {
+		httpReq.SetBasicAuth(req.basicAuth[0], req.basicAuth[1])
 	}
 
-	return r.client.Do(req)
+	if ctx != nil {
+		httpReq = httpReq.WithContext(ctx)
+	}
+
+	return req.httpClient.Do(httpReq)
 }
 
-func (r *Request) buildBody() (io.Reader, error) {
-	if r.body != nil {
-		if r.syncBody {
+func (req *Request) buildBody() (io.Reader, error) {
+	if req.body != nil {
+		if req.useBuffer {
 			buf := new(bytes.Buffer)
-			err := r.body.Write(buf)
+			err := req.body.Write(buf)
 			if err != nil {
 				return nil, err
 			}
@@ -156,7 +216,7 @@ func (r *Request) buildBody() (io.Reader, error) {
 
 		body, writer := io.Pipe()
 		go func() {
-			var err = r.body.Write(writer)
+			var err = req.body.Write(writer)
 			_ = writer.CloseWithError(err)
 		}()
 

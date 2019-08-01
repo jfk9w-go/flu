@@ -1,8 +1,7 @@
 package flu
 
 import (
-	"fmt"
-	"net"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -11,98 +10,78 @@ import (
 
 // Client is a fluent http.Client wrapper.
 type Client struct {
-	client         *http.Client
-	defaultHeaders http.Header
+	httpClient *http.Client
+	headers    []string
 }
 
 // NewClient wraps the passed http.Client.
-// If client == nil, creates a new http.Client
-func NewClient(client *http.Client) *Client {
-	if client == nil {
-		client = new(http.Client)
+// If httpClient == nil, creates a new http.Client
+func NewClient(httpClient *http.Client) *Client {
+	if httpClient == nil {
+		httpClient = &http.Client{
+			Transport: NewTransport().httpTransport,
+		}
 	}
 
 	return &Client{
-		client:         client,
-		defaultHeaders: http.Header{},
+		httpClient: httpClient,
+		headers:    make([]string, 0),
 	}
 }
 
-// Cookies sets the client cookies.
-func (c *Client) Cookies(rawurl string, cookies ...*http.Cookie) *Client {
+// AddHeader allows to specify a default headers set to every request.
+func (c *Client) AddHeader(key, value string) *Client {
+	c.headers = append(c.headers, key, value)
+	return c
+}
+
+func (c *Client) AddHeaders(keyValues ...string) *Client {
+	keyValuesLength := len(keyValues)
+	if keyValuesLength%2 == 1 {
+		log.Fatal("keyValues length must be even, got ", keyValuesLength)
+	}
+
+	c.headers = append(c.headers, keyValues...)
+	return c
+}
+
+func (c *Client) Timeout(timeout time.Duration) *Client {
+	c.httpClient.Timeout = timeout
+	return c
+}
+
+// SetCookies sets the http.Client cookies.
+func (c *Client) SetCookies(rawurl string, cookies ...*http.Cookie) *Client {
 	url, err := url.Parse(rawurl)
 	if err != nil {
 		panic(err)
 	}
 
-	if c.client.Jar == nil {
-		var jar, err = cookiejar.New(nil)
+	if c.httpClient.Jar == nil {
+		jar, err := cookiejar.New(nil)
 		if err != nil {
 			panic(err)
 		}
 
-		c.client.Jar = jar
+		c.httpClient.Jar = jar
 	}
 
-	cookies = append(cookies, c.client.Jar.Cookies(url)...)
-	c.client.Jar.SetCookies(url, cookies)
+	cookies = append(cookies, c.httpClient.Jar.Cookies(url)...)
+	c.httpClient.Jar.SetCookies(url, cookies)
 
 	return c
 }
 
-// ResponseHeaderTimeout allows to specify the response header timeout on the client.
-func (c *Client) ResponseHeaderTimeout(timeout time.Duration) *Client {
-	if timeout > 0 {
-		c.transport().ResponseHeaderTimeout = timeout
-	}
-
-	return c
-}
-
-// DefaultHeader allows to specify a default header set to every request.
-func (c *Client) DefaultHeader(key, value string) *Client {
-	c.defaultHeaders.Set(key, value)
-	return c
-}
-
-// NewRequest creates a Request builder.
+// NewRequest creates a Request.
 func (c *Client) NewRequest() *Request {
-	base := &Request{
-		client:      c.client,
-		header:      http.Header{},
+	req := &Request{
+		httpClient:  c.httpClient,
+		method:      http.MethodGet,
+		headers:     http.Header{},
 		queryParams: url.Values{},
 		basicAuth:   [2]string{"", ""},
 	}
 
-	for key, values := range c.defaultHeaders {
-		for _, value := range values {
-			base.Header(key, value)
-		}
-	}
-
-	return base
-}
-
-func (c *Client) transport() *http.Transport {
-	if c.client.Transport == nil {
-		var transport = &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: time.Second,
-			ResponseHeaderTimeout: time.Minute,
-		}
-
-		c.client.Transport = transport
-		return transport
-	} else if transport, ok := c.client.Transport.(*http.Transport); ok {
-		return transport
-	} else {
-		panic(fmt.Errorf("invalid transport type: %T", c.client.Transport))
-	}
+	req.SetHeaders(c.headers...)
+	return req
 }

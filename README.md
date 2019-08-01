@@ -32,8 +32,9 @@ func main() {
 	// Create a client and execute a GET request.
 	// Unmarshal response body from JSON into the post.
 	err := flu.NewClient(nil).NewRequest().
-	    Endpoint("https://jsonplaceholder.typicode.com/posts/1").
-	    Get().
+	    GET().
+	    Resource("https://jsonplaceholder.typicode.com/posts/1").
+	    Send().
 	    ReadBody(flu.JSON(post)).
 	    Error
 	

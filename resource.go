@@ -20,7 +20,7 @@ type WriteResource interface {
 // RawReadResource is a wrapper around io.ReadCloser.
 // Provides "read-once" semantics.
 type RawReadResource struct {
-	rc io.ReadCloser
+	readCloser io.ReadCloser
 }
 
 // NewReadResource wraps an io.Reader into a Resource.
@@ -39,7 +39,7 @@ func NewReadResource(reader io.Reader) RawReadResource {
 
 // Read returns the wrapped io.Reader.
 func (r RawReadResource) Read() (io.ReadCloser, error) {
-	return r.rc, nil
+	return r.readCloser, nil
 }
 
 // FileSystemResource is a file identified by its path.
