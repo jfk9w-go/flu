@@ -11,7 +11,7 @@ import (
 
 // Request allows to set basic http.Request properties.
 type Request struct {
-	httpClient  *http.Client
+	http        *http.Client
 	method      string
 	resource    string
 	headers     http.Header
@@ -199,7 +199,7 @@ func (req *Request) send(ctx context.Context) (*http.Response, error) {
 		httpReq = httpReq.WithContext(ctx)
 	}
 
-	return req.httpClient.Do(httpReq)
+	return req.http.Do(httpReq)
 }
 
 func (req *Request) buildBody() (io.Reader, error) {
@@ -216,7 +216,7 @@ func (req *Request) buildBody() (io.Reader, error) {
 
 		body, writer := io.Pipe()
 		go func() {
-			var err = req.body.Write(writer)
+			err := req.body.Write(writer)
 			_ = writer.CloseWithError(err)
 		}()
 

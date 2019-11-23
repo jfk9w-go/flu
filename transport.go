@@ -10,76 +10,89 @@ import (
 
 // Transport is a fluent wrapper around *http.Transport.
 type Transport struct {
-	httpTransport *http.Transport
+	http *http.Transport
 }
 
 // NewTransport initializes a new Transport with default settings.
 // This should be equivalent to http.DefaultTransport
 func NewTransport() *Transport {
-	httpTransport := new(http.Transport)
-	*httpTransport = *http.DefaultTransport.(*http.Transport)
-	return &Transport{httpTransport}
+	transport := new(http.Transport)
+	*transport = *http.DefaultTransport.(*http.Transport)
+	return &Transport{transport}
 }
 
-func (t *Transport) RoundTrip(httpReq *http.Request) (*http.Response, error) {
-	return t.httpTransport.RoundTrip(httpReq)
+func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return t.http.RoundTrip(req)
 }
 
 // Proxy sets the http.Transport.Proxy.
 func (t *Transport) Proxy(proxy func(*http.Request) (*url.URL, error)) *Transport {
-	t.httpTransport.Proxy = proxy
+	t.http.Proxy = proxy
 	return t
 }
 
+func (t *Transport) ProxyURL(rawurl string) *Transport {
+	if rawurl == "" {
+		return t.Proxy(nil)
+	}
+
+	proxy, err := url.Parse(rawurl)
+	if err != nil {
+		panic(err)
+	}
+
+	return t.Proxy(func(*http.Request) (*url.URL, error) { return proxy, nil })
+}
+
 // DialContext sets http.Transport.DialContext.
-func (t *Transport) DialContext(dialContext func(ctx context.Context, network, addr string) (net.Conn, error)) *Transport {
-	t.httpTransport.DialContext = dialContext
+func (t *Transport) DialContext(fun func(ctx context.Context, network, addr string) (net.Conn, error)) *Transport {
+	t.http.DialContext = fun
 	return t
 }
 
 // MaxIdleConns sets http.Transport.MaxIdleConns.
-func (t *Transport) MaxIdleConns(maxIdleConns int) *Transport {
-	t.httpTransport.MaxIdleConns = maxIdleConns
+func (t *Transport) MaxIdleConns(value int) *Transport {
+	t.http.MaxIdleConns = value
 	return t
 }
 
 // MaxIdleConnsPerHost sets http.Transport.MaxIdleConnsPerHost.
-func (t *Transport) MaxIdleConnsPerHost(maxIdleConnsPerHost int) *Transport {
-	t.httpTransport.MaxConnsPerHost = maxIdleConnsPerHost
+func (t *Transport) MaxIdleConnsPerHost(value int) *Transport {
+	t.http.MaxConnsPerHost = value
 	return t
 }
 
 // MaxConnsPerHost sets http.Transport.MaxConnsPerHost.
-func (t *Transport) MaxConnsPerHost(maxConnsPerHost int) *Transport {
-	t.httpTransport.MaxConnsPerHost = maxConnsPerHost
+func (t *Transport) MaxConnsPerHost(value int) *Transport {
+	t.http.MaxConnsPerHost = value
 	return t
 }
 
 // IdleConnTimeout sets http.Transport.IdleConnTimeout.
-func (t *Transport) IdleConnTimeout(idleConnTimeout time.Duration) *Transport {
-	t.httpTransport.IdleConnTimeout = idleConnTimeout
+func (t *Transport) IdleConnTimeout(value time.Duration) *Transport {
+	t.http.IdleConnTimeout = value
 	return t
 }
 
 // ResponseHeaderTimeout sets http.Transport.ResponseHeaderTimeout.
-func (t *Transport) ResponseHeaderTimeout(responseHeaderTimeout time.Duration) *Transport {
-	t.httpTransport.ResponseHeaderTimeout = responseHeaderTimeout
+func (t *Transport) ResponseHeaderTimeout(value time.Duration) *Transport {
+	t.http.ResponseHeaderTimeout = value
 	return t
 }
 
 // TLSHandshakeTimeout sets http.Transport.TLSHandshakeTimeout.
-func (t *Transport) TLSHandshakeTimeout(tlsHandshakeTimeout time.Duration) *Transport {
-	t.httpTransport.TLSHandshakeTimeout = tlsHandshakeTimeout
+func (t *Transport) TLSHandshakeTimeout(value time.Duration) *Transport {
+	t.http.TLSHandshakeTimeout = value
 	return t
 }
 
 // ExpectContinueTimeout sets http.Transport.ExpectContinueTimeout.
-func (t *Transport) ExpectContinueTimeout(expectContinueTimeout time.Duration) *Transport {
-	t.httpTransport.ExpectContinueTimeout = expectContinueTimeout
+func (t *Transport) ExpectContinueTimeout(value time.Duration) *Transport {
+	t.http.ExpectContinueTimeout = value
 	return t
 }
 
 // NewClient creates a new Client with this Transport.
 func (t *Transport) NewClient() *Client {
-	return NewClient(&http.Client{Transport: t.httpTransport})
+	return NewClient(&http.Client{Transport: t.http})
 }
