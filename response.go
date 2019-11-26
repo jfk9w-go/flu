@@ -2,101 +2,88 @@ package flu
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
 // Response is a fluent response wrapper.
 type Response struct {
+	http *http.Response
+
 	// Error contains an error in case of a request processing error
 	// or nil in case of success.
-	Error    error
-	httpResp *http.Response
+	Error error
 }
 
-// ReadResponseFunc allows to process a http.Response entirely.
-type ReadResponseFunc func(*http.Response) error
+type ResponseHandler interface {
+	Handle(*http.Response) error
+}
 
-// ReadResponseFunc executes a ReadResponseFunc if there was no previous error.
-func (resp *Response) ReadResponseFunc(readResponse ReadResponseFunc) *Response {
-	if resp.Error != nil {
-		return resp
+// HandleResponse executes a ResponseHandler if no previous handling errors occurred.
+func (r *Response) HandleResponse(h ResponseHandler) *Response {
+	if r.Error != nil {
+		return r
 	}
 
-	resp.Error = readResponse(resp.httpResp)
-	return resp
+	return r.complete(h.Handle(r.http))
 }
 
-// CheckStatusCode checks if a http.Response matches a status code from statusCodes.
-func (resp *Response) CheckStatusCode(allowedStatusCodes ...int) *Response {
-	return resp.ReadResponseFunc(func(httpResp *http.Response) error {
-		for _, expectedStatusCode := range allowedStatusCodes {
-			if expectedStatusCode == httpResp.StatusCode {
-				return nil
-			}
+type StatusCodeError int
+
+func (e StatusCodeError) Error() string {
+	return fmt.Sprintf("invalid status code: %d", int(e))
+}
+
+// CheckStatusCode checks the response status code and sets the error to StatusCodeError if there is no match.
+func (r *Response) CheckStatusCode(cs ...int) *Response {
+	if r.Error != nil {
+		return r
+	}
+
+	for _, c := range cs {
+		if c == r.http.StatusCode {
+			return r
 		}
+	}
 
-		return fmt.Errorf("invalid status code: %d", httpResp.StatusCode)
-	})
+	return r.complete(StatusCodeError(r.http.StatusCode))
 }
 
-// ReadBodyFunc allows to process a http.Response body
-type ReadBodyFunc func(io.Reader) error
+// Decode decodes the response body.
+func (r *Response) Decode(d DecoderFrom) *Response {
+	if r.Error != nil {
+		return r
+	}
 
-// ReadBodyFunc executes a ReadBodyFunc.
-// It closes the response body after the processing is done.
-func (resp *Response) ReadBodyFunc(readBody ReadBodyFunc) *Response {
-	return resp.ReadResponseFunc(func(resp *http.Response) error {
-		err := readBody(resp.Body)
-		_ = resp.Body.Close()
-		return err
-	})
+	body := r.http.Body
+	defer body.Close()
+	return r.complete(d.DecodeFrom(body))
 }
 
-// ReadBody checks the content type of the response and reads the body.
-func (resp *Response) ReadBody(reader BodyReader) *Response {
-	return resp.ReadResponseFunc(func(resp *http.Response) error {
-		contentType := resp.Header.Get("Content-Type")
-		if !strings.HasPrefix(contentType, reader.ContentType()) {
-			return fmt.Errorf("invalid content type: %s", contentType)
-		}
+type ContentTypeError string
 
-		err := reader.Read(resp.Body)
-		_ = resp.Body.Close()
-
-		return err
-	})
+func (e ContentTypeError) Error() string {
+	return fmt.Sprintf("invalid content type: %s", string(e))
 }
 
-// ReadBytesFunc is a response body byte array processor.
-type ReadBytesFunc func([]byte) error
+// DecodeBody checks the response Content-Type header.
+// If there is no match, sets the error to ContentTypeError.
+// Otherwise proceeds with Decode.
+func (r *Response) DecodeBody(b BodyDecoderFrom) *Response {
+	if r.Error != nil {
+		return r
+	}
 
-// ReadBytesFunc executes a ReadBytesFunc.
-// It closes the response body after the body content has been Read.
-func (resp *Response) ReadBytesFunc(readBytes ReadBytesFunc) *Response {
-	return resp.ReadResponseFunc(func(httpResp *http.Response) error {
-		data, err := ioutil.ReadAll(httpResp.Body)
-		_ = httpResp.Body.Close()
-		if err != nil {
-			return err
-		}
+	contentType := r.http.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, b.ContentType()) {
+		r.Error = ContentTypeError(contentType)
+		return r
+	}
 
-		return readBytes(data)
-	})
+	return r.Decode(b)
 }
 
-// ReadResource allows to save a http.Response body to a WriteResource as is.
-func (resp *Response) ReadResource(resource WriteResource) *Response {
-	return resp.ReadBodyFunc(func(body io.Reader) error {
-		writer, err := resource.Write()
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(writer, body)
-		_ = writer.Close()
-		return err
-	})
+func (r *Response) complete(err error) *Response {
+	r.Error = err
+	return r
 }

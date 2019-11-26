@@ -16,13 +16,9 @@ type Transport struct {
 // NewTransport initializes a new Transport with default settings.
 // This should be equivalent to http.DefaultTransport
 func NewTransport() *Transport {
-	transport := new(http.Transport)
-	*transport = *http.DefaultTransport.(*http.Transport)
-	return &Transport{transport}
-}
-
-func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	return t.http.RoundTrip(req)
+	return &Transport{
+		http: http.DefaultTransport.(*http.Transport).Clone(),
+	}
 }
 
 // Proxy sets the http.Transport.Proxy.
@@ -41,7 +37,7 @@ func (t *Transport) ProxyURL(rawurl string) *Transport {
 		panic(err)
 	}
 
-	return t.Proxy(func(*http.Request) (*url.URL, error) { return proxy, nil })
+	return t.Proxy(http.ProxyURL(proxy))
 }
 
 // DialContext sets http.Transport.DialContext.

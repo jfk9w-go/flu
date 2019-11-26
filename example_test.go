@@ -18,15 +18,19 @@ func (p *Post) String() string {
 	return fmt.Sprintf("ID: %d\nUserID: %d\nTitle: %s\nBody: %s\n", p.ID, p.UserID, p.Title, p.Body)
 }
 
+func newClient() *Client {
+	return NewClient(http.DefaultClient)
+}
+
 // Example_GET provides an example of performing a GET request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_GET() {
 	post := new(Post)
-	err := NewClient(nil).NewRequest().
+	err := newClient().NewRequest().
 		GET().
 		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Send().
-		ReadBody(JSON(post)).
+		DecodeBody(JSON(post)).
 		Error
 
 	if err != nil {
@@ -49,13 +53,13 @@ func Example_GET() {
 // Example_GET_QueryParams provides an example of performing a GET request with query parameters.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_GET_QueryParams() {
-	posts := make([]Post, 0)
-	err := NewClient(nil).NewRequest().
+	r := make([]Post, 0)
+	err := newClient().NewRequest().
 		GET().
 		Resource("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
 		Send().
-		ReadBody(JSON(&posts)).
+		DecodeBody(JSON(&r)).
 		Error
 
 	if err != nil {
@@ -63,7 +67,7 @@ func Example_GET_QueryParams() {
 		return
 	}
 
-	fmt.Printf("Posts count: %d\n", len(posts))
+	fmt.Printf("Posts count: %d\n", len(r))
 
 	// Output:
 	// Posts count: 10
@@ -72,8 +76,8 @@ func Example_GET_QueryParams() {
 // Example_POST provides an example of performing a POST request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_POST() {
-	post := new(Post)
-	err := NewClient(nil).NewRequest().
+	r := new(Post)
+	err := newClient().NewRequest().
 		POST().
 		Resource("https://jsonplaceholder.typicode.com/posts").
 		Body(JSON(&Post{
@@ -82,7 +86,7 @@ func Example_POST() {
 			Body:   "body",
 		})).
 		Send().
-		ReadBody(JSON(post)).
+		DecodeBody(JSON(r)).
 		Error
 
 	if err != nil {
@@ -90,7 +94,7 @@ func Example_POST() {
 		return
 	}
 
-	fmt.Println(post)
+	fmt.Println(r)
 
 	// Output:
 	// ID: 101
@@ -102,8 +106,8 @@ func Example_POST() {
 // Example_PUT provides an example of performing a PUT request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_PUT() {
-	post := new(Post)
-	err := NewClient(nil).NewRequest().
+	r := new(Post)
+	err := newClient().NewRequest().
 		PUT().
 		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(&Post{
@@ -112,7 +116,7 @@ func Example_PUT() {
 			Body:   "body",
 		})).
 		Send().
-		ReadBody(JSON(post)).
+		DecodeBody(JSON(r)).
 		Error
 
 	if err != nil {
@@ -120,7 +124,7 @@ func Example_PUT() {
 		return
 	}
 
-	fmt.Println(post)
+	fmt.Println(r)
 
 	// Output:
 	// ID: 1
@@ -132,8 +136,8 @@ func Example_PUT() {
 // Example_PATCH provides an example of performing a PATCH request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_PATCH() {
-	post := new(Post)
-	err := NewClient(nil).NewRequest().
+	r := new(Post)
+	err := newClient().NewRequest().
 		PATCH().
 		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(&Post{
@@ -142,7 +146,7 @@ func Example_PATCH() {
 			Body:   "body",
 		})).
 		Send().
-		ReadBody(JSON(post)).
+		DecodeBody(JSON(r)).
 		Error
 
 	if err != nil {
@@ -150,7 +154,7 @@ func Example_PATCH() {
 		return
 	}
 
-	fmt.Println(post)
+	fmt.Println(r)
 
 	// Output:
 	// ID: 1
@@ -162,13 +166,13 @@ func Example_PATCH() {
 // Example_DELETE provides an example of performing a DELETE request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_DELETE() {
-	resp := ""
-	err := NewClient(nil).NewRequest().
+	r := PlainText("")
+	err := newClient().NewRequest().
 		DELETE().
 		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Send().
 		CheckStatusCode(http.StatusOK).
-		ReadBodyFunc(PlainText(&resp).Read).
+		Decode(r).
 		Error
 
 	if err != nil {
@@ -176,8 +180,8 @@ func Example_DELETE() {
 		return
 	}
 
-	fmt.Printf("Response: %s\n", resp)
+	fmt.Printf("Response: %s\n", r.Value)
 
 	// Output:
-	// Response: {}
+	// Response:
 }
