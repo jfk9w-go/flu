@@ -26,6 +26,10 @@ func MultipartFormFrom(f Form) MultipartForm {
 	}
 }
 
+func MultipartFormValues(uv url.Values) MultipartForm {
+	return MultipartFormFrom(FormValues(uv))
+}
+
 func (f MultipartForm) Set(k, v string) MultipartForm {
 	f.Form.Set(k, v)
 	return f
