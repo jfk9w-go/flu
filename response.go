@@ -2,6 +2,7 @@ package flu
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -81,6 +82,35 @@ func (r *Response) DecodeBody(b BodyDecoderFrom) *Response {
 	}
 
 	return r.Decode(b)
+}
+
+type WriteResourceError struct {
+	Err error
+}
+
+func (e WriteResourceError) Error() string {
+	return fmt.Sprintf("failed to read resource from body: %s", e.Err)
+}
+
+func (r *Response) ReadResource(res ResourceWriter) *Response {
+	if r.Error != nil {
+		return r
+	}
+
+	w, err := res.Writer()
+	if err != nil {
+		return r.complete(WriteResourceError{err})
+	}
+
+	//noinspection GoUnhandledErrorResult
+	defer w.Close()
+
+	body := r.http.Body
+	//noinspection GoUnhandledErrorResult
+	defer body.Close()
+
+	_, err = io.Copy(w, body)
+	return r.complete(err)
 }
 
 func (r *Response) complete(err error) *Response {
