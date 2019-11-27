@@ -14,8 +14,8 @@ type MultipartForm struct {
 	rs map[string]ResourceReader
 }
 
-func EmptyMultipartForm() MultipartForm {
-	return MultipartFormFrom(EmptyForm())
+func EmptyMultipartForm(withFormValues bool) MultipartForm {
+	return MultipartFormFrom(EmptyForm(withFormValues))
 }
 
 func MultipartFormFrom(f Form) MultipartForm {

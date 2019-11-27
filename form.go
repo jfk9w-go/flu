@@ -15,16 +15,21 @@ type Form struct {
 	values url.Values
 }
 
-func FormValue(value interface{}) Form {
-	return Form{value: value}
+func FormValue(value interface{}, withValues bool) Form {
+	var values url.Values = nil
+	if withValues {
+		values = make(url.Values)
+	}
+
+	return Form{value: value, values: values}
 }
 
 func FormValues(values url.Values) Form {
 	return Form{values: values}
 }
 
-func EmptyForm() Form {
-	return Form{}
+func EmptyForm(withValues bool) Form {
+	return FormValue(nil, withValues)
 }
 
 func (form Form) EncodeTo(writer io.Writer) error {

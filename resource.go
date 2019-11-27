@@ -15,40 +15,32 @@ type ResourceWriter interface {
 	Writer() (io.WriteCloser, error)
 }
 
-type FileResource string
+type File string
 
-func File(path string) FileResource {
-	return FileResource(path)
+func (f File) Path() string {
+	return string(f)
 }
 
-func (r FileResource) Path() string {
-	return string(r)
+func (f File) Reader() (io.ReadCloser, error) {
+	return os.Open(f.Path())
 }
 
-func (r FileResource) Reader() (io.ReadCloser, error) {
-	return os.Open(r.Path())
-}
-
-func (r FileResource) Writer() (io.WriteCloser, error) {
-	if err := os.MkdirAll(path.Dir(r.Path()), os.ModePerm); err != nil {
+func (f File) Writer() (io.WriteCloser, error) {
+	if err := os.MkdirAll(path.Dir(f.Path()), os.ModePerm); err != nil {
 		return nil, err
 	}
 
-	return os.Create(r.Path())
+	return os.Create(f.Path())
 }
 
-type URLResource string
+type URL string
 
-func URL(rawurl string) URLResource {
-	return URLResource(rawurl)
+func (u URL) URL() string {
+	return string(u)
 }
 
-func (r URLResource) URL() string {
-	return string(r)
-}
-
-func (r URLResource) Reader() (io.ReadCloser, error) {
-	resp, err := http.Get(r.URL())
+func (u URL) Reader() (io.ReadCloser, error) {
+	resp, err := http.Get(u.URL())
 	if err != nil {
 		return nil, err
 	}
