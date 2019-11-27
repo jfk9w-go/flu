@@ -61,22 +61,22 @@ func randomBoundary() string {
 }
 
 func (f MultipartForm) EncodeTo(w io.Writer) error {
-	mw := multipart.NewWriter(w)
+	multipartWriter := multipart.NewWriter(w)
 	//noinspection GoUnhandledErrorResult
-	defer mw.Close()
+	defer multipartWriter.Close()
 
-	err := mw.SetBoundary(f.b)
+	err := multipartWriter.SetBoundary(f.b)
 	if err != nil {
 		return err
 	}
 
-	for key, res := range f.rs {
-		w, err := mw.CreateFormFile(key, key)
+	for key, resource := range f.rs {
+		w, err := multipartWriter.CreateFormFile(key, key)
 		if err != nil {
 			return err
 		}
 
-		r, err := res.Reader()
+		r, err := resource.Reader()
 		if err != nil {
 			return err
 		}
@@ -88,17 +88,17 @@ func (f MultipartForm) EncodeTo(w io.Writer) error {
 		}
 	}
 
-	uv, err := f.Form.encodeValue()
+	urlValues, err := f.Form.encodeValue()
 	if err != nil {
 		return err
 	}
 
-	err = writeMultipartValues(mw, uv)
+	err = writeMultipartValues(multipartWriter, urlValues)
 	if err != nil {
 		return err
 	}
 
-	return writeMultipartValues(mw, f.uv)
+	return writeMultipartValues(multipartWriter, f.values)
 }
 
 func writeMultipartValues(mw *multipart.Writer, uv url.Values) error {

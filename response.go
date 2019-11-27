@@ -21,44 +21,68 @@ type ResponseHandler interface {
 }
 
 // HandleResponse executes a ResponseHandler if no previous handling errors occurred.
-func (r *Response) HandleResponse(h ResponseHandler) *Response {
-	if r.Error != nil {
-		return r
+func (resp *Response) HandleResponse(handler ResponseHandler) *Response {
+	if resp.Error != nil {
+		return resp
 	}
 
-	return r.complete(h.Handle(r.http))
+	return resp.complete(handler.Handle(resp.http))
 }
 
-type StatusCodeError int
+type StatusCodeError struct {
+	Code int
+	Text string
+}
 
 func (e StatusCodeError) Error() string {
-	return fmt.Sprintf("invalid status code: %d", int(e))
+	text := fmt.Sprintf("invalid status code: %d", int(e.Code))
+	if e.Text != "" {
+		text += " (" + e.Text + ")"
+	}
+
+	return text
+}
+
+func createStatusCodeError(resp *http.Response) StatusCodeError {
+	e := StatusCodeError{Code: resp.StatusCode}
+	if resp.Body != nil {
+		defer resp.Body.Close()
+		text := PlainText("")
+		err := text.DecodeFrom(resp.Body)
+		if err != nil {
+			text.Value = fmt.Sprintf("response body read error: %s", err.Error())
+		}
+
+		e.Text = text.Value
+	}
+
+	return e
 }
 
 // CheckStatusCode checks the response status code and sets the error to StatusCodeError if there is no match.
-func (r *Response) CheckStatusCode(cs ...int) *Response {
-	if r.Error != nil {
-		return r
+func (resp *Response) CheckStatusCode(okCodes ...int) *Response {
+	if resp.Error != nil {
+		return resp
 	}
 
-	for _, c := range cs {
-		if c == r.http.StatusCode {
-			return r
+	for _, c := range okCodes {
+		if c == resp.http.StatusCode {
+			return resp
 		}
 	}
 
-	return r.complete(StatusCodeError(r.http.StatusCode))
+	return resp.complete(createStatusCodeError(resp.http))
 }
 
 // Decode decodes the response body.
-func (r *Response) Decode(d DecoderFrom) *Response {
-	if r.Error != nil {
-		return r
+func (resp *Response) Decode(decoder DecoderFrom) *Response {
+	if resp.Error != nil {
+		return resp
 	}
 
-	body := r.http.Body
+	body := resp.http.Body
 	defer body.Close()
-	return r.complete(d.DecodeFrom(body))
+	return resp.complete(decoder.DecodeFrom(body))
 }
 
 type ContentTypeError string
@@ -70,18 +94,18 @@ func (e ContentTypeError) Error() string {
 // DecodeBody checks the response Content-Type header.
 // If there is no match, sets the error to ContentTypeError.
 // Otherwise proceeds with Decode.
-func (r *Response) DecodeBody(b BodyDecoderFrom) *Response {
-	if r.Error != nil {
-		return r
+func (resp *Response) DecodeBody(body BodyDecoderFrom) *Response {
+	if resp.Error != nil {
+		return resp
 	}
 
-	contentType := r.http.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, b.ContentType()) {
-		r.Error = ContentTypeError(contentType)
-		return r
+	contentType := resp.http.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, body.ContentType()) {
+		resp.Error = ContentTypeError(contentType)
+		return resp
 	}
 
-	return r.Decode(b)
+	return resp.Decode(body)
 }
 
 type WriteResourceError struct {
@@ -92,28 +116,28 @@ func (e WriteResourceError) Error() string {
 	return fmt.Sprintf("failed to read resource from body: %s", e.Err)
 }
 
-func (r *Response) ReadResource(res ResourceWriter) *Response {
-	if r.Error != nil {
-		return r
+func (resp *Response) ReadResource(res ResourceWriter) *Response {
+	if resp.Error != nil {
+		return resp
 	}
 
 	w, err := res.Writer()
 	if err != nil {
-		return r.complete(WriteResourceError{err})
+		return resp.complete(WriteResourceError{err})
 	}
 
 	//noinspection GoUnhandledErrorResult
 	defer w.Close()
 
-	body := r.http.Body
+	body := resp.http.Body
 	//noinspection GoUnhandledErrorResult
 	defer body.Close()
 
 	_, err = io.Copy(w, body)
-	return r.complete(err)
+	return resp.complete(err)
 }
 
-func (r *Response) complete(err error) *Response {
-	r.Error = err
-	return r
+func (resp *Response) complete(err error) *Response {
+	resp.Error = err
+	return resp
 }

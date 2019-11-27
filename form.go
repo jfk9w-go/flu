@@ -8,79 +8,82 @@ import (
 )
 
 type Form struct {
-	v  interface{}
-	uv url.Values
+	// value contains a value which will be transformed into url.Values
+	value interface{}
+	// values contains values which can be set separately by key
+	// keys from here override the same keys in url.Values transformed from values
+	values url.Values
 }
 
-func FormValue(v interface{}) Form {
-	return Form{v: v}
+func FormValue(value interface{}) Form {
+	return Form{value: value}
 }
 
-func FormValues(uv url.Values) Form {
-	return Form{uv: uv}
+func FormValues(values url.Values) Form {
+	return Form{values: values}
 }
 
 func EmptyForm() Form {
 	return Form{}
 }
 
-func (f Form) EncodeTo(w io.Writer) error {
-	uv, err := f.encodeValue()
+func (form Form) EncodeTo(writer io.Writer) error {
+	values, err := form.encodeValue()
 	if err != nil {
 		return err
 	}
 
-	_, err = io.WriteString(w, uv.Encode())
+	_, err = io.WriteString(writer, values.Encode())
 	if err != nil {
 		return err
 	}
 
-	if len(f.uv) > 0 && len(uv) > 0 {
-		_, err = io.WriteString(w, "&")
+	if len(form.values) > 0 && len(values) > 0 {
+		_, err = io.WriteString(writer, "&")
 		if err != nil {
 			return err
 		}
 	}
 
-	_, err = io.WriteString(w, f.uv.Encode())
+	_, err = io.WriteString(writer, form.values.Encode())
 	return err
 }
 
-func (f Form) ContentType() string {
+func (Form) ContentType() string {
 	return "application/x-www-form-urlencoded"
 }
 
-func (f Form) Set(k, v string) Form {
-	f.uv.Set(k, v)
-	return f
+func (form Form) Set(key, value string) Form {
+	form.values.Set(key, value)
+	return form
 }
 
-func (f Form) Add(k, v string) Form {
-	f.uv.Add(k, v)
-	return f
+func (form Form) Add(key, value string) Form {
+	form.values.Add(key, value)
+	return form
 }
 
-func (f Form) AddAll(k string, vs ...string) Form {
-	for _, v := range vs {
-		f.Add(k, v)
+func (form Form) AddAll(key string, values ...string) Form {
+	for _, v := range values {
+		form.Add(key, v)
 	}
 
-	return f
+	return form
 }
 
-func (f Form) Multipart() MultipartForm {
-	return MultipartFormFrom(f)
+func (form Form) Multipart() MultipartForm {
+	return MultipartFormFrom(form)
 }
 
-func (f Form) encodeValue() (url.Values, error) {
-	uv, err := query.Values(f.v)
+func (form Form) encodeValue() (url.Values, error) {
+	values, err := query.Values(form.value)
 	if err != nil {
 		return nil, err
 	}
 
-	for k := range f.uv {
-		uv.Del(k)
+	for k := range form.values {
+		values.Del(k)
 	}
 
-	return uv, nil
+	return values, nil
 }

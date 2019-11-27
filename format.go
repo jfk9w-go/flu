@@ -36,69 +36,68 @@ type BodyCodec interface {
 }
 
 type jsonBody struct {
-	v interface{}
+	value interface{}
 }
 
-func (b jsonBody) EncodeTo(w io.Writer) error {
-	return json.NewEncoder(w).Encode(b.v)
+func (body jsonBody) EncodeTo(writer io.Writer) error {
+	return json.NewEncoder(writer).Encode(body.value)
 }
 
-func (b jsonBody) DecodeFrom(r io.Reader) error {
-	return json.NewDecoder(r).Decode(b.v)
+func (body jsonBody) DecodeFrom(reader io.Reader) error {
+	return json.NewDecoder(reader).Decode(body.value)
 }
 
-func (b jsonBody) ContentType() string {
+func (body jsonBody) ContentType() string {
 	return "application/json"
 }
 
-func JSON(v interface{}) BodyCodec {
-	return jsonBody{v}
+func JSON(value interface{}) BodyCodec {
+	return jsonBody{value}
 }
 
 type xmlBody struct {
-	v interface{}
+	value interface{}
 }
 
-func (b xmlBody) EncodeTo(w io.Writer) error {
-	return xml.NewEncoder(w).Encode(b.v)
+func (body xmlBody) EncodeTo(writer io.Writer) error {
+	return xml.NewEncoder(writer).Encode(body.value)
 }
 
-func (b xmlBody) DecodeFrom(r io.Reader) error {
-	return xml.NewDecoder(r).Decode(b.v)
+func (body xmlBody) DecodeFrom(reader io.Reader) error {
+	return xml.NewDecoder(reader).Decode(body.value)
 }
 
-func (b xmlBody) ContentType() string {
+func (xmlBody) ContentType() string {
 	return "application/xml"
 }
 
-func XML(v interface{}) BodyCodec {
-	return xmlBody{v}
+func XML(value interface{}) BodyCodec {
+	return xmlBody{value}
 }
 
 type PlainTextBody struct {
 	Value string
 }
 
-func (c PlainTextBody) EncodeTo(w io.Writer) error {
-	_, err := io.WriteString(w, c.Value)
+func (body *PlainTextBody) EncodeTo(w io.Writer) error {
+	_, err := io.WriteString(w, body.Value)
 	return err
 }
 
-func (c PlainTextBody) DecodeFrom(r io.Reader) error {
+func (body *PlainTextBody) DecodeFrom(r io.Reader) error {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
 	}
 
-	p := &c.Value
-	*p = string(data)
+	body.Value = string(data)
 	return nil
 }
 
-func (c PlainTextBody) ContentType() string {
+func (*PlainTextBody) ContentType() string {
 	return "text/plain"
 }
 
-func PlainText(v string) PlainTextBody {
-	return PlainTextBody{v}
+func PlainText(v string) *PlainTextBody {
+	return &PlainTextBody{v}
 }
