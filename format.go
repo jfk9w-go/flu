@@ -11,8 +11,30 @@ type EncoderTo interface {
 	EncodeTo(io.Writer) error
 }
 
+func Write(resource ResourceWriter, encoder EncoderTo) error {
+	w, err := resource.Writer()
+	if err != nil {
+		return err
+	}
+
+	//noinspection GoUnhandledErrorResult
+	defer w.Close()
+	return encoder.EncodeTo(w)
+}
+
 type DecoderFrom interface {
 	DecodeFrom(io.Reader) error
+}
+
+func Read(resource ResourceReader, decoder DecoderFrom) error {
+	r, err := resource.Reader()
+	if err != nil {
+		return err
+	}
+
+	//noinspection GoUnhandledErrorResult
+	defer r.Close()
+	return decoder.DecodeFrom(r)
 }
 
 type Body interface {
