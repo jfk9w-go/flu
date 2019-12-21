@@ -180,10 +180,6 @@ func (r *Request) send(ctx context.Context) (*http.Response, error) {
 	}
 	if r.body != nil {
 		httpReq.Header.Set("Content-Type", r.body.ContentType())
-		if httpReq.ContentLength == 0 {
-			// see net/http/request.go:896
-			httpReq.ContentLength = -1
-		}
 	}
 	if httpReq.URL.RawQuery != "" {
 		httpReq.URL.RawQuery += "&"
