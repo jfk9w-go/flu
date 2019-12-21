@@ -9,6 +9,35 @@ import (
 	"path"
 )
 
+type Xable struct {
+	R io.Reader
+	W io.Writer
+}
+
+func (x Xable) Reader() (io.ReadCloser, error) {
+	if rc, ok := x.R.(io.ReadCloser); ok {
+		return rc, nil
+	} else {
+		return ioutil.NopCloser(x.R), nil
+	}
+}
+
+func (x Xable) Writer() (io.WriteCloser, error) {
+	return x, nil
+}
+
+func (x Xable) Write(p []byte) (int, error) {
+	return x.W.Write(p)
+}
+
+func (x Xable) Close() error {
+	if wc, ok := x.W.(io.Closer); ok {
+		return wc.Close()
+	} else {
+		return nil
+	}
+}
+
 type File string
 
 func (f File) Path() string {
@@ -50,8 +79,8 @@ func (b *Buffer) Reader() (io.ReadCloser, error) {
 	return Bytes(b.bb().Bytes()).Reader()
 }
 
-func (b *Buffer) ReadFrom(reader io.Reader) error {
-	return Copy(Xable{R: reader}, b)
+func (b *Buffer) ReadFrom(r io.Reader) error {
+	return Copy(Xable{R: r}, b)
 }
 
 func (b *Buffer) Writer() (io.WriteCloser, error) {
@@ -71,33 +100,4 @@ type Bytes []byte
 
 func (b Bytes) Reader() (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewReader(b)), nil
-}
-
-type Xable struct {
-	R io.Reader
-	W io.Writer
-}
-
-func (x Xable) Reader() (io.ReadCloser, error) {
-	if rc, ok := x.R.(io.ReadCloser); ok {
-		return rc, nil
-	} else {
-		return ioutil.NopCloser(x.R), nil
-	}
-}
-
-func (x Xable) Writer() (io.WriteCloser, error) {
-	return x, nil
-}
-
-func (x Xable) Write(p []byte) (int, error) {
-	return x.W.Write(p)
-}
-
-func (x Xable) Close() error {
-	if wc, ok := x.W.(io.Closer); ok {
-		return wc.Close()
-	} else {
-		return nil
-	}
 }

@@ -11,12 +11,12 @@ type jsonBody struct {
 	value interface{}
 }
 
-func (b jsonBody) WriteTo(writer io.Writer) error {
-	return json.NewEncoder(writer).Encode(b.value)
+func (b jsonBody) WriteTo(w io.Writer) error {
+	return json.NewEncoder(w).Encode(b.value)
 }
 
-func (b jsonBody) ReadFrom(reader io.Reader) error {
-	return json.NewDecoder(reader).Decode(b.value)
+func (b jsonBody) ReadFrom(r io.Reader) error {
+	return json.NewDecoder(r).Decode(b.value)
 }
 
 func (b jsonBody) ContentType() string {
@@ -31,12 +31,12 @@ type xmlBody struct {
 	value interface{}
 }
 
-func (b xmlBody) WriteTo(writer io.Writer) error {
-	return xml.NewEncoder(writer).Encode(b.value)
+func (b xmlBody) WriteTo(w io.Writer) error {
+	return xml.NewEncoder(w).Encode(b.value)
 }
 
-func (b xmlBody) ReadFrom(reader io.Reader) error {
-	return xml.NewDecoder(reader).Decode(b.value)
+func (b xmlBody) ReadFrom(r io.Reader) error {
+	return xml.NewDecoder(r).Decode(b.value)
 }
 
 func (b xmlBody) ContentType() string {
