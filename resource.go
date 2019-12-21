@@ -1,19 +1,13 @@
 package flu
 
 import (
+	"bytes"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 )
-
-type ResourceReader interface {
-	Reader() (io.ReadCloser, error)
-}
-
-type ResourceWriter interface {
-	Writer() (io.WriteCloser, error)
-}
 
 type File string
 
@@ -29,7 +23,6 @@ func (f File) Writer() (io.WriteCloser, error) {
 	if err := os.MkdirAll(path.Dir(f.Path()), os.ModePerm); err != nil {
 		return nil, err
 	}
-
 	return os.Create(f.Path())
 }
 
@@ -44,6 +37,67 @@ func (u URL) Reader() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return resp.Body, nil
+}
+
+type Buffer bytes.Buffer
+
+func (b *Buffer) bb() *bytes.Buffer {
+	return (*bytes.Buffer)(b)
+}
+
+func (b *Buffer) Reader() (io.ReadCloser, error) {
+	return Bytes(b.bb().Bytes()).Reader()
+}
+
+func (b *Buffer) ReadFrom(reader io.Reader) error {
+	return Copy(Xable{R: reader}, b)
+}
+
+func (b *Buffer) Writer() (io.WriteCloser, error) {
+	b.bb().Reset()
+	return b, nil
+}
+
+func (b *Buffer) Write(p []byte) (int, error) {
+	return b.bb().Write(p)
+}
+
+func (b *Buffer) Close() error {
+	return nil
+}
+
+type Bytes []byte
+
+func (b Bytes) Reader() (io.ReadCloser, error) {
+	return ioutil.NopCloser(bytes.NewReader(b)), nil
+}
+
+type Xable struct {
+	R io.Reader
+	W io.Writer
+}
+
+func (x Xable) Reader() (io.ReadCloser, error) {
+	if rc, ok := x.R.(io.ReadCloser); ok {
+		return rc, nil
+	} else {
+		return ioutil.NopCloser(x.R), nil
+	}
+}
+
+func (x Xable) Writer() (io.WriteCloser, error) {
+	return x, nil
+}
+
+func (x Xable) Write(p []byte) (int, error) {
+	return x.W.Write(p)
+}
+
+func (x Xable) Close() error {
+	if wc, ok := x.W.(io.Closer); ok {
+		return wc.Close()
+	} else {
+		return nil
+	}
 }

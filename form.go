@@ -20,7 +20,6 @@ func FormValue(value interface{}, withValues bool) Form {
 	if withValues {
 		values = make(url.Values)
 	}
-
 	return Form{value: value, values: values}
 }
 
@@ -32,24 +31,21 @@ func EmptyForm(withValues bool) Form {
 	return FormValue(nil, withValues)
 }
 
-func (form Form) EncodeTo(writer io.Writer) error {
+func (form Form) WriteTo(writer io.Writer) error {
 	values, err := form.encodeValue()
 	if err != nil {
 		return err
 	}
-
 	_, err = io.WriteString(writer, values.Encode())
 	if err != nil {
 		return err
 	}
-
 	if len(form.values) > 0 && len(values) > 0 {
 		_, err = io.WriteString(writer, "&")
 		if err != nil {
 			return err
 		}
 	}
-
 	_, err = io.WriteString(writer, form.values.Encode())
 	return err
 }
@@ -72,7 +68,6 @@ func (form Form) AddAll(key string, values ...string) Form {
 	for _, v := range values {
 		form.Add(key, v)
 	}
-
 	return form
 }
 
@@ -85,10 +80,8 @@ func (form Form) encodeValue() (url.Values, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	for k := range form.values {
 		values.Del(k)
 	}
-
 	return values, nil
 }

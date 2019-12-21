@@ -31,16 +31,13 @@ func Example_GET() {
 		GET().
 		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Send().
-		DecodeBody(JSON(post)).
+		ReadBody(JSON(post)).
 		Error
-
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 	fmt.Println(post)
-
 	// Output:
 	// ID: 1
 	// UserID: 1
@@ -60,16 +57,13 @@ func Example_GET_QueryParams() {
 		Resource("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
 		Send().
-		DecodeBody(JSON(&posts)).
+		ReadBody(JSON(&posts)).
 		Error
-
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 	fmt.Printf("Posts count: %d\n", len(posts))
-
 	// Output:
 	// Posts count: 10
 }
@@ -87,16 +81,13 @@ func Example_POST() {
 			Body:   "body",
 		})).
 		Send().
-		DecodeBody(JSON(post)).
+		ReadBody(JSON(post)).
 		Error
-
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 	fmt.Println(post)
-
 	// Output:
 	// ID: 101
 	// UserID: 10
@@ -117,16 +108,13 @@ func Example_PUT() {
 			Body:   "body",
 		})).
 		Send().
-		DecodeBody(JSON(post)).
+		ReadBody(JSON(post)).
 		Error
-
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 	fmt.Println(post)
-
 	// Output:
 	// ID: 1
 	// UserID: 10
@@ -147,16 +135,13 @@ func Example_PATCH() {
 			Body:   "body",
 		})).
 		Send().
-		DecodeBody(JSON(post)).
+		ReadBody(JSON(post)).
 		Error
-
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 	fmt.Println(post)
-
 	// Output:
 	// ID: 1
 	// UserID: 10
@@ -172,16 +157,13 @@ func Example_DELETE() {
 		DELETE().
 		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Send().
-		Decode(response).
+		Read(response).
 		Error
-
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 	fmt.Printf("Response: %s\n", response.Value)
-
 	// Output:
 	// Response: {}
 }

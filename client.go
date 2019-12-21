@@ -9,20 +9,17 @@ import (
 
 // Client is a fluent http.Client wrapper.
 type Client struct {
-	http      *http.Client
-	headers   []string
-	respCodes map[int]struct{}
+	http        *http.Client
+	headers     []string
+	statusCodes map[int]struct{}
 }
 
 // NewClient wraps the passed http.Client.
 // If http == nil, creates a new http.Client
 func NewClient(client *http.Client) *Client {
 	if client == nil {
-		client = &http.Client{
-			Transport: NewTransport().http,
-		}
+		client = &http.Client{Transport: NewTransport().http}
 	}
-
 	return &Client{
 		http:    client,
 		headers: make([]string, 0),
@@ -52,31 +49,25 @@ func (c *Client) SetCookies(rawurl string, cookies ...*http.Cookie) *Client {
 	if err != nil {
 		panic(err)
 	}
-
 	if c.http.Jar == nil {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
 			panic(err)
 		}
-
 		c.http.Jar = jar
 	}
-
 	cookies = append(cookies, c.http.Jar.Cookies(u)...)
 	c.http.Jar.SetCookies(u, cookies)
-
 	return c
 }
 
 func (c *Client) AcceptResponseCodes(codes ...int) *Client {
-	if c.respCodes == nil {
-		c.respCodes = make(map[int]struct{})
+	if c.statusCodes == nil {
+		c.statusCodes = make(map[int]struct{})
 	}
-
 	for _, code := range codes {
-		c.respCodes[code] = struct{}{}
+		c.statusCodes[code] = struct{}{}
 	}
-
 	return c
 }
 
@@ -88,9 +79,8 @@ func (c *Client) NewRequest() *Request {
 		headers:     http.Header{},
 		queryParams: url.Values{},
 		basicAuth:   [2]string{"", ""},
-		respCodes:   c.respCodes,
+		statusCodes: c.statusCodes,
 	}
-
 	req.SetHeaders(c.headers...)
 	return req
 }

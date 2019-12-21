@@ -10,8 +10,8 @@ import (
 
 type MultipartForm struct {
 	Form
-	b  string
-	rs map[string]ResourceReader
+	boundary string
+	files    map[string]Readable
 }
 
 func EmptyMultipartForm(withFormValues bool) MultipartForm {
@@ -20,9 +20,9 @@ func EmptyMultipartForm(withFormValues bool) MultipartForm {
 
 func MultipartFormFrom(f Form) MultipartForm {
 	return MultipartForm{
-		Form: f,
-		b:    randomBoundary(),
-		rs:   make(map[string]ResourceReader),
+		Form:     f,
+		boundary: randomBoundary(),
+		files:    make(map[string]Readable),
 	}
 }
 
@@ -45,8 +45,8 @@ func (f MultipartForm) AddAll(k string, vs ...string) MultipartForm {
 	return f
 }
 
-func (f MultipartForm) Resource(k string, r ResourceReader) MultipartForm {
-	f.rs[k] = r
+func (f MultipartForm) File(k string, r Readable) MultipartForm {
+	f.files[k] = r
 	return f
 }
 
@@ -56,49 +56,36 @@ func randomBoundary() string {
 	if err != nil {
 		panic(err)
 	}
-
 	return fmt.Sprintf("%x", buf[:])
 }
 
-func (f MultipartForm) EncodeTo(w io.Writer) error {
-	multipartWriter := multipart.NewWriter(w)
+func (f MultipartForm) WriteTo(w io.Writer) error {
+	mw := multipart.NewWriter(w)
 	//noinspection GoUnhandledErrorResult
-	defer multipartWriter.Close()
-
-	err := multipartWriter.SetBoundary(f.b)
+	defer mw.Close()
+	err := mw.SetBoundary(f.boundary)
 	if err != nil {
 		return err
 	}
-
-	for key, resource := range f.rs {
-		w, err := multipartWriter.CreateFormFile(key, key)
+	for k, r := range f.files {
+		w, err := mw.CreateFormFile(k, k)
 		if err != nil {
 			return err
 		}
-
-		r, err := resource.Reader()
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(w, r)
-		_ = r.Close()
+		err = Copy(r, Xable{W: w})
 		if err != nil {
 			return err
 		}
 	}
-
-	urlValues, err := f.Form.encodeValue()
+	values, err := f.Form.encodeValue()
 	if err != nil {
 		return err
 	}
-
-	err = writeMultipartValues(multipartWriter, urlValues)
+	err = writeMultipartValues(mw, values)
 	if err != nil {
 		return err
 	}
-
-	return writeMultipartValues(multipartWriter, f.values)
+	return writeMultipartValues(mw, f.values)
 }
 
 func writeMultipartValues(mw *multipart.Writer, uv url.Values) error {
@@ -110,10 +97,9 @@ func writeMultipartValues(mw *multipart.Writer, uv url.Values) error {
 			}
 		}
 	}
-
 	return nil
 }
 
 func (f MultipartForm) ContentType() string {
-	return "multipart/form-data; boundary=" + f.b
+	return "multipart/form-data; boundary=" + f.boundary
 }

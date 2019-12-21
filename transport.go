@@ -16,9 +16,7 @@ type Transport struct {
 // NewTransport initializes a new Transport with default settings.
 // This should be equivalent to http.DefaultTransport
 func NewTransport() *Transport {
-	return &Transport{
-		http: http.DefaultTransport.(*http.Transport).Clone(),
-	}
+	return &Transport{http.DefaultTransport.(*http.Transport).Clone()}
 }
 
 // Proxy sets the http.Transport.Proxy.
@@ -31,12 +29,10 @@ func (t *Transport) ProxyURL(rawurl string) *Transport {
 	if rawurl == "" {
 		return t.Proxy(nil)
 	}
-
 	proxy, err := url.Parse(rawurl)
 	if err != nil {
 		panic(err)
 	}
-
 	return t.Proxy(http.ProxyURL(proxy))
 }
 
