@@ -1,6 +1,7 @@
 package flu
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -160,16 +161,16 @@ func (r *Request) TRACE() *Request {
 
 // Send executes the request and returns a response.
 func (r *Request) Send() *Response {
-	resp, err := r.send(nil)
+	resp, err := r.do(nil)
 	return &Response{resp, err}
 }
 
 func (r *Request) SendWithContext(ctx context.Context) *Response {
-	httpResp, err := r.send(ctx)
-	return &Response{httpResp, err}
+	resp, err := r.do(ctx)
+	return &Response{resp, err}
 }
 
-func (r *Request) send(ctx context.Context) (*http.Response, error) {
+func (r *Request) do(ctx context.Context) (*http.Response, error) {
 	body, err := r.content()
 	if err != nil {
 		return nil, err
@@ -219,10 +220,10 @@ func (r *Request) content() (io.Reader, error) {
 	if !r.buffer {
 		return PipeOut(r.body).Reader()
 	}
-	buf := new(Buffer)
-	err := Write(r.body, buf)
+	buf := new(bytes.Buffer)
+	err := r.body.WriteTo(buf)
 	if err != nil {
 		return nil, err
 	}
-	return buf.Reader()
+	return buf, nil
 }
