@@ -174,42 +174,42 @@ func (r *Request) send(ctx context.Context) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	httpReq, err := http.NewRequest(r.method, r.resource, body)
+	req, err := http.NewRequest(r.method, r.resource, body)
 	if err != nil {
 		return nil, err
 	}
 	if r.body != nil {
-		httpReq.Header.Set("Content-Type", r.body.ContentType())
+		req.Header.Set("Content-Type", r.body.ContentType())
 	}
-	if httpReq.URL.RawQuery != "" {
-		httpReq.URL.RawQuery += "&"
+	if req.URL.RawQuery != "" {
+		req.URL.RawQuery += "&"
 	}
-	httpReq.URL.RawQuery += r.queryParams.Encode()
-	if len(httpReq.Header) == 0 {
-		httpReq.Header = r.headers
+	req.URL.RawQuery += r.queryParams.Encode()
+	if len(req.Header) == 0 {
+		req.Header = r.headers
 	} else {
 		for key, values := range r.headers {
 			for _, value := range values {
-				httpReq.Header.Add(key, value)
+				req.Header.Add(key, value)
 			}
 		}
 	}
 	if r.basicAuth[0] != "" && r.basicAuth[1] != "" {
-		httpReq.SetBasicAuth(r.basicAuth[0], r.basicAuth[1])
+		req.SetBasicAuth(r.basicAuth[0], r.basicAuth[1])
 	}
 	if ctx != nil {
-		httpReq = httpReq.WithContext(ctx)
+		req = req.WithContext(ctx)
 	}
-	httpResp, err := r.http.Do(httpReq)
+	resp, err := r.http.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	if r.statusCodes != nil {
-		if _, ok := r.statusCodes[httpResp.StatusCode]; !ok {
-			return nil, createStatusCodeError(httpResp)
+		if _, ok := r.statusCodes[resp.StatusCode]; !ok {
+			return nil, createStatusCodeError(resp)
 		}
 	}
-	return httpResp, nil
+	return resp, nil
 }
 
 func (r *Request) content() (io.Reader, error) {
