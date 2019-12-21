@@ -2,6 +2,7 @@ package flu
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"net/http"
 	"net/url"
@@ -75,6 +76,11 @@ func (t *Transport) ResponseHeaderTimeout(value time.Duration) *Transport {
 // TLSHandshakeTimeout sets http.Transport.TLSHandshakeTimeout.
 func (t *Transport) TLSHandshakeTimeout(value time.Duration) *Transport {
 	t.http.TLSHandshakeTimeout = value
+	return t
+}
+
+func (t *Transport) TLSClientConfig(value *tls.Config) *Transport {
+	t.http.TLSClientConfig = value
 	return t
 }
 

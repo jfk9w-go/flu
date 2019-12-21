@@ -43,8 +43,8 @@ type BodyReadWriter interface {
 	ReaderFrom
 }
 
-func Write(writer WriterTo, writable Writable) error {
-	w, err := writable.Writer()
+func Write(writer WriterTo, out Writable) error {
+	w, err := out.Writer()
 	if err != nil {
 		return err
 	}
@@ -53,8 +53,8 @@ func Write(writer WriterTo, writable Writable) error {
 	return writer.WriteTo(w)
 }
 
-func Read(readable Readable, reader ReaderFrom) error {
-	r, err := readable.Reader()
+func Read(in Readable, reader ReaderFrom) error {
+	r, err := in.Reader()
 	if err != nil {
 		return err
 	}
@@ -82,13 +82,13 @@ func PipeIn(reader ReaderFrom) Writable {
 }
 
 //noinspection GoUnhandledErrorResult
-func Copy(readable Readable, writable Writable) error {
-	reader, err := readable.Reader()
+func Copy(in Readable, out Writable) error {
+	reader, err := in.Reader()
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
-	writer, err := writable.Writer()
+	writer, err := out.Writer()
 	if err != nil {
 		return err
 	}
