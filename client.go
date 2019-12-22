@@ -10,7 +10,7 @@ import (
 // Client is a fluent http.Client wrapper.
 type Client struct {
 	http        *http.Client
-	headers     []string
+	headers     http.Header
 	statusCodes map[int]struct{}
 }
 
@@ -22,19 +22,34 @@ func NewClient(client *http.Client) *Client {
 	}
 	return &Client{
 		http:    client,
-		headers: make([]string, 0),
+		headers: make(http.Header),
 	}
 }
 
 // AddHeader allows to specify default headers set to every request.
 func (c *Client) AddHeader(key, value string) *Client {
-	c.headers = append(c.headers, key, value)
+	c.headers.Add(key, value)
 	return c
 }
 
 func (c *Client) AddHeaders(kvPairs ...string) *Client {
-	keyValuePairsLength(kvPairs)
-	c.headers = append(c.headers, kvPairs...)
+	l := keyValuePairsLength(kvPairs)
+	for i := 0; i < l; i++ {
+		c.AddHeader(kvPairs[2*i], kvPairs[2*i+1])
+	}
+	return c
+}
+
+func (c *Client) SetHeader(key, value string) *Client {
+	c.headers.Set(key, value)
+	return c
+}
+
+func (c *Client) SetHeaders(kvPairs ...string) *Client {
+	l := keyValuePairsLength(kvPairs)
+	for i := 0; i < l; i++ {
+		c.SetHeader(kvPairs[2*i], kvPairs[2*i+1])
+	}
 	return c
 }
 
@@ -76,11 +91,10 @@ func (c *Client) NewRequest() *Request {
 	req := &Request{
 		http:        c.http,
 		method:      http.MethodGet,
-		headers:     http.Header{},
+		headers:     c.headers.Clone(),
 		queryParams: url.Values{},
 		basicAuth:   [2]string{"", ""},
 		statusCodes: c.statusCodes,
 	}
-	req.SetHeaders(c.headers...)
 	return req
 }
