@@ -3,11 +3,11 @@ package flu
 import "io"
 
 type Readable interface {
-	Reader() (io.ReadCloser, error)
+	Reader() (io.Reader, error)
 }
 
 type Writable interface {
-	Writer() (io.WriteCloser, error)
+	Writer() (io.Writer, error)
 }
 
 type ReadWritable interface {
@@ -49,7 +49,9 @@ func Write(writer WriterTo, out Writable) error {
 		return err
 	}
 	//noinspection GoUnhandledErrorResult
-	defer w.Close()
+	if w, ok := w.(io.Closer); ok {
+		defer w.Close()
+	}
 	return writer.WriteTo(w)
 }
 
@@ -59,7 +61,9 @@ func Read(in Readable, reader ReaderFrom) error {
 		return err
 	}
 	//noinspection GoUnhandledErrorResult
-	defer r.Close()
+	if r, ok := r.(io.Closer); ok {
+		defer r.Close()
+	}
 	return reader.ReadFrom(r)
 }
 
@@ -83,16 +87,20 @@ func PipeIn(reader ReaderFrom) Writable {
 
 //noinspection GoUnhandledErrorResult
 func Copy(in Readable, out Writable) error {
-	reader, err := in.Reader()
+	r, err := in.Reader()
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
-	writer, err := out.Writer()
+	if r, ok := r.(io.Closer); ok {
+		defer r.Close()
+	}
+	w, err := out.Writer()
 	if err != nil {
 		return err
 	}
-	defer writer.Close()
-	_, err = io.Copy(writer, reader)
+	if w, ok := w.(io.Closer); ok {
+		defer w.Close()
+	}
+	_, err = io.Copy(w, r)
 	return err
 }

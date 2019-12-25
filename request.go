@@ -1,7 +1,6 @@
 package flu
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -217,13 +216,16 @@ func (r *Request) content() (io.Reader, error) {
 	if r.body == nil {
 		return nil, nil
 	}
-	if !r.buffer {
-		return PipeOut(r.body).Reader()
+	var body Readable
+	if r.buffer {
+		buf := new(Buffer)
+		err := Write(r.body, buf)
+		if err != nil {
+			return nil, err
+		}
+		body = buf
+	} else {
+		body = PipeOut(r.body)
 	}
-	buf := new(bytes.Buffer)
-	err := r.body.WriteTo(buf)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
+	return body.Reader()
 }
