@@ -62,10 +62,6 @@ func (b *Buffer) Reader() (io.Reader, error) {
 	return Bytes(b.bb().Bytes()).Reader()
 }
 
-func (b *Buffer) ReadFrom(r io.Reader) error {
-	return Copy(Xable{R: r}, b)
-}
-
 func (b *Buffer) Writer() (io.Writer, error) {
 	b.bb().Reset()
 	return b.bb(), nil
