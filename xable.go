@@ -52,19 +52,21 @@ func (u URL) Reader() (io.Reader, error) {
 	return resp.Body, nil
 }
 
-type Buffer bytes.Buffer
-
-func (b *Buffer) bb() *bytes.Buffer {
-	return (*bytes.Buffer)(b)
+type Buffer struct {
+	*bytes.Buffer
 }
 
-func (b *Buffer) Reader() (io.Reader, error) {
-	return Bytes(b.bb().Bytes()).Reader()
+func NewBuffer() Buffer {
+	return Buffer{new(bytes.Buffer)}
 }
 
-func (b *Buffer) Writer() (io.Writer, error) {
-	b.bb().Reset()
-	return b.bb(), nil
+func (b Buffer) Reader() (io.Reader, error) {
+	return Bytes(b.Bytes()).Reader()
+}
+
+func (b Buffer) Writer() (io.Writer, error) {
+	b.Reset()
+	return b.Buffer, nil
 }
 
 type Bytes []byte

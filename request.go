@@ -218,7 +218,7 @@ func (r *Request) content() (io.Reader, error) {
 	}
 	var body Readable
 	if r.buffer {
-		buf := new(Buffer)
+		buf := NewBuffer()
 		err := Write(r.body, buf)
 		if err != nil {
 			return nil, err
