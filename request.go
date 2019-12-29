@@ -218,14 +218,33 @@ func (r *Request) content() (io.Reader, error) {
 	}
 	var body Readable
 	if r.buffer {
-		buf := NewBuffer()
-		err := Write(r.body, buf)
-		if err != nil {
-			return nil, err
+		if bb, ok := r.body.(bufferedBody); ok {
+			body = bb.buf
+		} else {
+			buf := NewBuffer()
+			err := Write(r.body, buf)
+			if err != nil {
+				return nil, err
+			}
+			r.body = bufferedBody{buf, r.body.ContentType()}
+			body = buf
 		}
-		body = buf
 	} else {
 		body = PipeOut(r.body)
 	}
 	return body.Reader()
+}
+
+type bufferedBody struct {
+	buf         Buffer
+	contentType string
+}
+
+func (bb bufferedBody) WriteTo(w io.Writer) error {
+	_, err := bb.buf.WriteTo(w)
+	return err
+}
+
+func (bb bufferedBody) ContentType() string {
+	return bb.contentType
 }
