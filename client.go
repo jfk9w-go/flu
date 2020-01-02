@@ -9,7 +9,7 @@ import (
 
 // Client is a fluent http.Client wrapper.
 type Client struct {
-	http        *http.Client
+	*http.Client
 	headers     http.Header
 	statusCodes map[int]struct{}
 }
@@ -21,7 +21,7 @@ func NewClient(client *http.Client) *Client {
 		client = &http.Client{Transport: NewTransport().http}
 	}
 	return &Client{
-		http:    client,
+		Client:  client,
 		headers: make(http.Header),
 	}
 }
@@ -54,7 +54,7 @@ func (c *Client) SetHeaders(kvPairs ...string) *Client {
 }
 
 func (c *Client) Timeout(timeout time.Duration) *Client {
-	c.http.Timeout = timeout
+	c.Client.Timeout = timeout
 	return c
 }
 
@@ -64,15 +64,15 @@ func (c *Client) SetCookies(rawurl string, cookies ...*http.Cookie) *Client {
 	if err != nil {
 		panic(err)
 	}
-	if c.http.Jar == nil {
+	if c.Client.Jar == nil {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
 			panic(err)
 		}
-		c.http.Jar = jar
+		c.Client.Jar = jar
 	}
-	cookies = append(cookies, c.http.Jar.Cookies(u)...)
-	c.http.Jar.SetCookies(u, cookies)
+	cookies = append(cookies, c.Client.Jar.Cookies(u)...)
+	c.Client.Jar.SetCookies(u, cookies)
 	return c
 }
 
@@ -88,14 +88,13 @@ func (c *Client) AcceptResponseCodes(codes ...int) *Client {
 
 // NewRequest creates a NewRequest.
 func (c *Client) NewRequest(resource string) *Request {
-	req := &Request{
-		http:        c.http,
+	return &Request{
+		http:        c.Client,
 		method:      http.MethodGet,
 		resource:    resource,
 		headers:     c.headers.Clone(),
-		queryParams: url.Values{},
+		queryParams: make(url.Values),
 		basicAuth:   [2]string{"", ""},
 		statusCodes: c.statusCodes,
 	}
-	return req
 }
