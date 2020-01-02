@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-// Request allows to set basic http.Request properties.
+// NewRequest allows to set basic http.NewRequest properties.
 type Request struct {
 	http        *http.Client
 	method      string
@@ -19,12 +19,6 @@ type Request struct {
 	body        BodyWriter
 	buffer      bool
 	statusCodes map[int]struct{}
-}
-
-// Resource sets the request resource.
-func (r *Request) Resource(resource string) *Request {
-	r.resource = resource
-	return r
 }
 
 // AddHeader adds a request header.
@@ -159,7 +153,7 @@ func (r *Request) TRACE() *Request {
 }
 
 // Send executes the request and returns a response.
-func (r *Request) Send() *Response {
+func (r *Request) Execute() *Response {
 	resp, err := r.do(nil)
 	return &Response{resp, err}
 }

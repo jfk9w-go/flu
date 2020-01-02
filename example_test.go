@@ -27,10 +27,8 @@ func newClient() *Client {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_GET() {
 	post := new(Post)
-	err := newClient().NewRequest().
-		GET().
-		Resource("https://jsonplaceholder.typicode.com/posts/1").
-		Send().
+	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts/1").
+		Execute().
 		ReadBody(JSON(post)).
 		Error
 	if err != nil {
@@ -52,11 +50,9 @@ func Example_GET() {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_GET_QueryParams() {
 	posts := make([]Post, 0)
-	err := newClient().NewRequest().
-		GET().
-		Resource("https://jsonplaceholder.typicode.com/posts").
+	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
-		Send().
+		Execute().
 		ReadBody(JSON(&posts)).
 		Error
 	if err != nil {
@@ -72,15 +68,14 @@ func Example_GET_QueryParams() {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_POST() {
 	post := new(Post)
-	err := newClient().NewRequest().
+	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts").
 		POST().
-		Resource("https://jsonplaceholder.typicode.com/posts").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Send().
+		Execute().
 		ReadBody(JSON(post)).
 		Error
 	if err != nil {
@@ -99,15 +94,14 @@ func Example_POST() {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_PUT() {
 	post := new(Post)
-	err := newClient().NewRequest().
+	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts/1").
 		PUT().
-		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Send().
+		Execute().
 		ReadBody(JSON(post)).
 		Error
 	if err != nil {
@@ -126,15 +120,14 @@ func Example_PUT() {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_PATCH() {
 	post := new(Post)
-	err := newClient().NewRequest().
+	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts/1").
 		PATCH().
-		Resource("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(&Post{
 			UserID: 10,
 			Title:  "lorem ipsum",
 			Body:   "body",
 		})).
-		Send().
+		Execute().
 		ReadBody(JSON(post)).
 		Error
 	if err != nil {
@@ -153,10 +146,9 @@ func Example_PATCH() {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_DELETE() {
 	response := PlainText("")
-	err := newClient().NewRequest().
+	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts/1").
 		DELETE().
-		Resource("https://jsonplaceholder.typicode.com/posts/1").
-		Send().
+		Execute().
 		Read(response).
 		Error
 	if err != nil {

@@ -86,11 +86,12 @@ func (c *Client) AcceptResponseCodes(codes ...int) *Client {
 	return c
 }
 
-// NewRequest creates a Request.
-func (c *Client) NewRequest() *Request {
+// NewRequest creates a NewRequest.
+func (c *Client) NewRequest(resource string) *Request {
 	req := &Request{
 		http:        c.http,
 		method:      http.MethodGet,
+		resource:    resource,
 		headers:     c.headers.Clone(),
 		queryParams: url.Values{},
 		basicAuth:   [2]string{"", ""},

@@ -107,6 +107,6 @@ func Copy(in Readable, out Writable) error {
 
 var DefaultClient = NewClient(nil)
 
-func NewRequest() *Request {
-	return DefaultClient.NewRequest()
+func NewRequest(resource string) *Request {
+	return DefaultClient.NewRequest(resource)
 }
