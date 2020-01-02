@@ -104,3 +104,9 @@ func Copy(in Readable, out Writable) error {
 	_, err = io.Copy(w, r)
 	return err
 }
+
+var DefaultClient = NewClient(nil)
+
+func NewRequest() *Request {
+	return DefaultClient.NewRequest()
+}
