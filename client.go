@@ -86,11 +86,47 @@ func (c *Client) AcceptResponseCodes(codes ...int) *Client {
 	return c
 }
 
+func (c *Client) GET(resource string) *Request {
+	return c.NewRequest(http.MethodGet, resource)
+}
+
+func (c *Client) HEAD(resource string) *Request {
+	return c.NewRequest(http.MethodHead, resource)
+}
+
+func (c *Client) POST(resource string) *Request {
+	return c.NewRequest(http.MethodPost, resource)
+}
+
+func (c *Client) PUT(resource string) *Request {
+	return c.NewRequest(http.MethodPut, resource)
+}
+
+func (c *Client) PATCH(resource string) *Request {
+	return c.NewRequest(http.MethodPatch, resource)
+}
+
+func (c *Client) DELETE(resource string) *Request {
+	return c.NewRequest(http.MethodDelete, resource)
+}
+
+func (c *Client) CONNECT(resource string) *Request {
+	return c.NewRequest(http.MethodConnect, resource)
+}
+
+func (c *Client) OPTIONS(resource string) *Request {
+	return c.NewRequest(http.MethodOptions, resource)
+}
+
+func (c *Client) TRACE(resource string) *Request {
+	return c.NewRequest(http.MethodTrace, resource)
+}
+
 // NewRequest creates a NewRequest.
-func (c *Client) NewRequest(resource string) *Request {
+func (c *Client) NewRequest(method string, resource string) *Request {
 	return &Request{
 		http:        c.Client,
-		method:      http.MethodGet,
+		method:      method,
 		resource:    resource,
 		headers:     c.headers.Clone(),
 		queryParams: make(url.Values),

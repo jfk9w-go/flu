@@ -98,60 +98,6 @@ func (r *Request) Buffer() *Request {
 	return r
 }
 
-// GET sets the HTTP method to GET.
-func (r *Request) GET() *Request {
-	r.method = http.MethodGet
-	return r
-}
-
-// HEAD sets the HTTP method to HEAD.
-func (r *Request) HEAD() *Request {
-	r.method = http.MethodHead
-	return r
-}
-
-// POST sets the HTTP method to POST.
-func (r *Request) POST() *Request {
-	r.method = http.MethodPost
-	return r
-}
-
-// PUT sets the HTTP method to PUT.
-func (r *Request) PUT() *Request {
-	r.method = http.MethodPut
-	return r
-}
-
-// PATCH sets the HTTP method to PATCH.
-func (r *Request) PATCH() *Request {
-	r.method = http.MethodPatch
-	return r
-}
-
-// DELETE sets the HTTP method to DELETE.
-func (r *Request) DELETE() *Request {
-	r.method = http.MethodDelete
-	return r
-}
-
-// CONNECT sets the HTTP method to CONNECT.
-func (r *Request) CONNECT() *Request {
-	r.method = http.MethodConnect
-	return r
-}
-
-// OPTIONS sets the HTTP method to OPTIONS.
-func (r *Request) OPTIONS() *Request {
-	r.method = http.MethodOptions
-	return r
-}
-
-// TRACE sets the HTTP method to TRACE.
-func (r *Request) TRACE() *Request {
-	r.method = http.MethodTrace
-	return r
-}
-
 // Send executes the request and returns a response.
 func (r *Request) Execute() *Response {
 	resp, err := r.do(nil)

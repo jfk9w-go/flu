@@ -26,16 +26,17 @@ func newClient() *Client {
 // Example_GET provides an example of performing a GET request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_GET() {
-	post := new(Post)
-	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts/1").
+	response := new(Post)
+	err := DefaultClient.
+		GET("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
-		ReadBody(JSON(post)).
+		ReadBody(JSON(response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(post)
+	fmt.Println(response)
 	// Output:
 	// ID: 1
 	// UserID: 1
@@ -49,17 +50,18 @@ func Example_GET() {
 // Example_GET_QueryParams provides an example of performing a GET request with query parameters.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_GET_QueryParams() {
-	posts := make([]Post, 0)
-	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts").
+	response := make([]Post, 0)
+	err := DefaultClient.
+		GET("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
 		Execute().
-		ReadBody(JSON(&posts)).
+		ReadBody(JSON(&response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Printf("Posts count: %d\n", len(posts))
+	fmt.Printf("Posts count: %d\n", len(response))
 	// Output:
 	// Posts count: 10
 }
@@ -67,22 +69,23 @@ func Example_GET_QueryParams() {
 // Example_POST provides an example of performing a POST request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_POST() {
-	post := new(Post)
-	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts").
-		POST().
-		Body(JSON(&Post{
-			UserID: 10,
-			Title:  "lorem ipsum",
-			Body:   "body",
-		})).
+	post := &Post{
+		UserID: 10,
+		Title:  "lorem ipsum",
+		Body:   "body",
+	}
+	response := new(Post)
+	err := DefaultClient.
+		POST("https://jsonplaceholder.typicode.com/posts").
+		Body(JSON(post)).
 		Execute().
-		ReadBody(JSON(post)).
+		ReadBody(JSON(response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(post)
+	fmt.Println(response)
 	// Output:
 	// ID: 101
 	// UserID: 10
@@ -93,22 +96,23 @@ func Example_POST() {
 // Example_PUT provides an example of performing a PUT request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_PUT() {
-	post := new(Post)
-	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts/1").
-		PUT().
-		Body(JSON(&Post{
-			UserID: 10,
-			Title:  "lorem ipsum",
-			Body:   "body",
-		})).
+	post := &Post{
+		UserID: 10,
+		Title:  "lorem ipsum",
+		Body:   "body",
+	}
+	response := new(Post)
+	err := DefaultClient.
+		PUT("https://jsonplaceholder.typicode.com/posts/1").
+		Body(JSON(post)).
 		Execute().
-		ReadBody(JSON(post)).
+		ReadBody(JSON(response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(post)
+	fmt.Println(response)
 	// Output:
 	// ID: 1
 	// UserID: 10
@@ -119,22 +123,23 @@ func Example_PUT() {
 // Example_PATCH provides an example of performing a PATCH request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_PATCH() {
-	post := new(Post)
-	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts/1").
-		PATCH().
-		Body(JSON(&Post{
-			UserID: 10,
-			Title:  "lorem ipsum",
-			Body:   "body",
-		})).
+	post := &Post{
+		UserID: 10,
+		Title:  "lorem ipsum",
+		Body:   "body",
+	}
+	response := new(Post)
+	err := DefaultClient.
+		PATCH("https://jsonplaceholder.typicode.com/posts/1").
+		Body(JSON(post)).
 		Execute().
-		ReadBody(JSON(post)).
+		ReadBody(JSON(response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(post)
+	fmt.Println(response)
 	// Output:
 	// ID: 1
 	// UserID: 10
@@ -146,8 +151,8 @@ func Example_PATCH() {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_DELETE() {
 	response := PlainText("")
-	err := newClient().NewRequest("https://jsonplaceholder.typicode.com/posts/1").
-		DELETE().
+	err := DefaultClient.
+		DELETE("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
 		Read(response).
 		Error

@@ -1,6 +1,9 @@
 package flu
 
-import "io"
+import (
+	"io"
+	"net/http"
+)
 
 type Readable interface {
 	Reader() (io.Reader, error)
@@ -105,8 +108,4 @@ func Copy(in Readable, out Writable) error {
 	return err
 }
 
-var DefaultClient = NewClient(nil)
-
-func NewRequest(resource string) *Request {
-	return DefaultClient.NewRequest(resource)
-}
+var DefaultClient = NewClient(http.DefaultClient)
