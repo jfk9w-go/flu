@@ -2,6 +2,7 @@ package flu
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -94,6 +95,24 @@ func (r *Response) ReadBody(reader BodyReader) *Response {
 		return r
 	}
 	return r.Read(reader)
+}
+
+type bodyReaderHandler struct {
+	reader io.Reader
+}
+
+func (b *bodyReaderHandler) Handle(resp *http.Response) error {
+	b.reader = resp.Body
+	return nil
+}
+
+func (r *Response) Reader() (io.Reader, error) {
+	if r.Error != nil {
+		return nil, r.Error
+	}
+	h := new(bodyReaderHandler)
+	err := r.HandleResponse(h).Error
+	return h.reader, err
 }
 
 type WritableError struct {
