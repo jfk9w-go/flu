@@ -105,7 +105,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.logger != nil {
 		id = GenerateEmojiID(RequestLogIDLength)
 		startTime = time.Now()
-		t.logger.Printf("[%s] %s %s", id, req.Method, req.URL.String())
+		t.logger.Printf("[%s] %s %s ...", id, req.Method, req.URL.String())
 	}
 	resp, err := t.http.RoundTrip(req)
 	if t.logger != nil {
