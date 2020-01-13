@@ -116,7 +116,8 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		if t.logger != nil {
 			startTime = time.Now()
 			t.logger.Printf("[%s] %s ...", id, description)
-		} else {
+		}
+		if t.registry != nil {
 			t.registry.Store(id, description)
 		}
 	}
