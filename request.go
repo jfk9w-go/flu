@@ -146,7 +146,7 @@ func (r *Request) do(ctx context.Context) (*http.Response, error) {
 	}
 	if r.statusCodes != nil {
 		if _, ok := r.statusCodes[resp.StatusCode]; !ok {
-			return nil, createStatusCodeError(resp)
+			return nil, NewStatusCodeError(resp)
 		}
 	}
 	return resp, nil

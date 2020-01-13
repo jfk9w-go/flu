@@ -41,7 +41,7 @@ func (e StatusCodeError) Error() string {
 	return text
 }
 
-func createStatusCodeError(r *http.Response) StatusCodeError {
+func NewStatusCodeError(r *http.Response) StatusCodeError {
 	e := StatusCodeError{Code: r.StatusCode}
 	if r.Body != nil {
 		defer r.Body.Close()
@@ -65,7 +65,7 @@ func (r *Response) CheckStatusCode(codes ...int) *Response {
 			return r
 		}
 	}
-	return r.complete(createStatusCodeError(r.http))
+	return r.complete(NewStatusCodeError(r.http))
 }
 
 // Read reads the response body.

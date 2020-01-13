@@ -3,7 +3,6 @@ package flu
 import (
 	"bytes"
 	"io"
-	"net/http"
 	"os"
 	"path"
 )
@@ -45,11 +44,7 @@ func (u URL) URL() string {
 }
 
 func (u URL) Reader() (io.Reader, error) {
-	resp, err := http.Get(u.URL())
-	if err != nil {
-		return nil, err
-	}
-	return resp.Body, nil
+	return DefaultClient.GET(u.URL()).Execute().Reader()
 }
 
 type Buffer struct {

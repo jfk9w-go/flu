@@ -3,6 +3,7 @@ package flu
 import (
 	"context"
 	"crypto/tls"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,13 +12,14 @@ import (
 
 // Transport is a fluent wrapper around *http.Transport.
 type Transport struct {
-	http *http.Transport
+	http   *http.Transport
+	logger *log.Logger
 }
 
 // NewTransport initializes a new Transport with default settings.
 // This should be equivalent to http.DefaultTransport
 func NewTransport() *Transport {
-	return &Transport{http.DefaultTransport.(*http.Transport).Clone()}
+	return &Transport{http.DefaultTransport.(*http.Transport).Clone(), nil}
 }
 
 // Proxy sets the http.Transport.Proxy.
@@ -90,7 +92,35 @@ func (t *Transport) ExpectContinueTimeout(value time.Duration) *Transport {
 	return t
 }
 
+func (t *Transport) Logger(logger *log.Logger) *Transport {
+	t.logger = logger
+	return t
+}
+
+var RequestLogIDLength = 8
+
+func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	var id string
+	var startTime time.Time
+	if t.logger != nil {
+		id = GenerateEmojiID(RequestLogIDLength)
+		startTime = time.Now()
+		t.logger.Printf("[%s] %s %s", id, req.Method, req.URL.String())
+	}
+	resp, err := t.http.RoundTrip(req)
+	if t.logger != nil {
+		duration := time.Now().Sub(startTime)
+		if err != nil {
+			t.logger.Printf("[%s] %s %s %s (%v)", id, req.Method, req.URL.String(), err, duration)
+		} else {
+			t.logger.Printf("[%s] %s %s %s (%v)",
+				id, req.Method, req.URL.String(), resp.Status, duration)
+		}
+	}
+	return resp, err
+}
+
 // NewClient creates a new Client with this Transport.
 func (t *Transport) NewClient() *Client {
-	return NewClient(&http.Client{Transport: t.http})
+	return NewClient(&http.Client{Transport: t})
 }

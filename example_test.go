@@ -2,6 +2,7 @@ package flu_test
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	. "github.com/jfk9w-go/flu"
@@ -23,11 +24,15 @@ func newClient() *Client {
 		AcceptResponseCodes(http.StatusOK, http.StatusCreated)
 }
 
+var ExampleClient = NewTransport().
+	Logger(log.New(log.Writer(), "", log.Flags())).
+	NewClient()
+
 // Example_GET provides an example of performing a GET request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_GET() {
 	response := new(Post)
-	err := DefaultClient.
+	err := ExampleClient.
 		GET("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
 		ReadBody(JSON(response)).
@@ -51,7 +56,7 @@ func Example_GET() {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_GET_QueryParams() {
 	response := make([]Post, 0)
-	err := DefaultClient.
+	err := ExampleClient.
 		GET("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
 		Execute().
@@ -75,7 +80,7 @@ func Example_POST() {
 		Body:   "body",
 	}
 	response := new(Post)
-	err := DefaultClient.
+	err := ExampleClient.
 		POST("https://jsonplaceholder.typicode.com/posts").
 		Body(JSON(post)).
 		Execute().
@@ -102,7 +107,7 @@ func Example_PUT() {
 		Body:   "body",
 	}
 	response := new(Post)
-	err := DefaultClient.
+	err := ExampleClient.
 		PUT("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(post)).
 		Execute().
@@ -129,7 +134,7 @@ func Example_PATCH() {
 		Body:   "body",
 	}
 	response := new(Post)
-	err := DefaultClient.
+	err := ExampleClient.
 		PATCH("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(post)).
 		Execute().
@@ -151,7 +156,7 @@ func Example_PATCH() {
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_DELETE() {
 	response := PlainText("")
-	err := DefaultClient.
+	err := ExampleClient.
 		DELETE("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
 		Read(response).
