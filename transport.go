@@ -118,7 +118,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 			t.logger.Printf("[%s] %s ...", id, description)
 		}
 		if t.requests != nil {
-			t.requests.Set(id, expvar.NewString(description))
+			t.requests.Add(description, 1)
 		}
 	}
 	resp, err := t.http.RoundTrip(req)
