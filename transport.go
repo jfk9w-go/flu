@@ -3,11 +3,11 @@ package flu
 import (
 	"context"
 	"crypto/tls"
+	"expvar"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 )
 
@@ -15,7 +15,7 @@ import (
 type Transport struct {
 	http     *http.Transport
 	logger   *log.Logger
-	registry *sync.Map
+	requests *expvar.Map
 }
 
 // NewTransport initializes a new Transport with default settings.
@@ -99,8 +99,8 @@ func (t *Transport) Logger(logger *log.Logger) *Transport {
 	return t
 }
 
-func (t *Transport) Registry(registry *sync.Map) *Transport {
-	t.registry = registry
+func (t *Transport) Requests(requests *expvar.Map) *Transport {
+	t.requests = requests
 	return t
 }
 
@@ -110,15 +110,15 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	var id string
 	var description string
 	var startTime time.Time
-	if t.logger != nil || t.registry != nil {
+	if t.logger != nil || t.requests != nil {
 		id = GenerateEmojiID(RequestLogIDLength)
 		description = req.Method + " " + req.URL.String()
 		if t.logger != nil {
 			startTime = time.Now()
 			t.logger.Printf("[%s] %s ...", id, description)
 		}
-		if t.registry != nil {
-			t.registry.Store(id, description)
+		if t.requests != nil {
+			t.requests.Set(id, expvar.NewString(description))
 		}
 	}
 	resp, err := t.http.RoundTrip(req)
@@ -131,8 +131,8 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 				id, req.Method, req.URL.String(), resp.Status, duration)
 		}
 	}
-	if t.registry != nil {
-		t.registry.Delete(id)
+	if t.requests != nil {
+		t.requests.Delete(id)
 	}
 	return resp, err
 }
