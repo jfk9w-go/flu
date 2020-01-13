@@ -7,19 +7,21 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
 // Transport is a fluent wrapper around *http.Transport.
 type Transport struct {
-	http   *http.Transport
-	logger *log.Logger
+	http     *http.Transport
+	logger   *log.Logger
+	registry *sync.Map
 }
 
 // NewTransport initializes a new Transport with default settings.
 // This should be equivalent to http.DefaultTransport
 func NewTransport() *Transport {
-	return &Transport{http.DefaultTransport.(*http.Transport).Clone(), nil}
+	return &Transport{http.DefaultTransport.(*http.Transport).Clone(), nil, nil}
 }
 
 // Proxy sets the http.Transport.Proxy.
@@ -97,15 +99,26 @@ func (t *Transport) Logger(logger *log.Logger) *Transport {
 	return t
 }
 
+func (t *Transport) Registry(registry *sync.Map) *Transport {
+	t.registry = registry
+	return t
+}
+
 var RequestLogIDLength = 8
 
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	var id string
+	var description string
 	var startTime time.Time
-	if t.logger != nil {
+	if t.logger != nil || t.registry != nil {
 		id = GenerateEmojiID(RequestLogIDLength)
-		startTime = time.Now()
-		t.logger.Printf("[%s] %s %s ...", id, req.Method, req.URL.String())
+		description = req.Method + " " + req.URL.String()
+		if t.logger != nil {
+			startTime = time.Now()
+			t.logger.Printf("[%s] %s ...", id, description)
+		} else {
+			t.registry.Store(id, description)
+		}
 	}
 	resp, err := t.http.RoundTrip(req)
 	if t.logger != nil {
@@ -116,6 +129,9 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 			t.logger.Printf("[%s] %s %s %s (%v)",
 				id, req.Method, req.URL.String(), resp.Status, duration)
 		}
+	}
+	if t.registry != nil {
+		t.registry.Delete(id)
 	}
 	return resp, err
 }
