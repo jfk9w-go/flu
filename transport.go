@@ -3,11 +3,11 @@ package flu
 import (
 	"context"
 	"crypto/tls"
-	"expvar"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -15,7 +15,7 @@ import (
 type Transport struct {
 	http     *http.Transport
 	logger   *log.Logger
-	requests *expvar.Map
+	requests *sync.Map
 }
 
 // NewTransport initializes a new Transport with default settings.
@@ -99,7 +99,7 @@ func (t *Transport) Logger(logger *log.Logger) *Transport {
 	return t
 }
 
-func (t *Transport) Requests(requests *expvar.Map) *Transport {
+func (t *Transport) PendingRequests(requests *sync.Map) *Transport {
 	t.requests = requests
 	return t
 }
@@ -111,14 +111,14 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	var description string
 	var startTime time.Time
 	if t.logger != nil || t.requests != nil {
-		id = GenerateEmojiID(RequestLogIDLength)
+		id = GenerateID(RequestLogIDLength)
 		description = req.Method + " " + req.URL.String()
 		if t.logger != nil {
 			startTime = time.Now()
 			t.logger.Printf("[%s] %s ...", id, description)
 		}
 		if t.requests != nil {
-			t.requests.Add(description, 1)
+			t.requests.Store(id, description)
 		}
 	}
 	resp, err := t.http.RoundTrip(req)
