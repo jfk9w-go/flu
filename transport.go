@@ -13,15 +13,21 @@ import (
 
 // Transport is a fluent wrapper around *http.Transport.
 type Transport struct {
-	http     *http.Transport
-	logger   *log.Logger
-	requests *sync.Map
+	http      *http.Transport
+	logger    *log.Logger
+	requests  *sync.Map
+	restraint Restraint
 }
 
 // NewTransport initializes a new Transport with default settings.
 // This should be equivalent to http.DefaultTransport
 func NewTransport() *Transport {
-	return &Transport{http.DefaultTransport.(*http.Transport).Clone(), nil, nil}
+	return &Transport{
+		http:      http.DefaultTransport.(*http.Transport).Clone(),
+		logger:    nil,
+		requests:  nil,
+		restraint: NoRestraint,
+	}
 }
 
 // Proxy sets the http.Transport.Proxy.
@@ -104,6 +110,11 @@ func (t *Transport) PendingRequests(requests *sync.Map) *Transport {
 	return t
 }
 
+func (t *Transport) Restraint(restraint Restraint) *Transport {
+	t.restraint = restraint
+	return t
+}
+
 var RequestLogIDLength = 8
 
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -121,7 +132,9 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 			t.requests.Store(id, description)
 		}
 	}
+	t.restraint.Start()
 	resp, err := t.http.RoundTrip(req)
+	t.restraint.Complete()
 	if t.logger != nil {
 		duration := time.Now().Sub(startTime)
 		if err != nil {
