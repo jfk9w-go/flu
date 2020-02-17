@@ -1,15 +1,16 @@
 package flu
 
 import (
+	"context"
 	"time"
 )
 
 type Limiter interface {
-	Start()
+	Start(ctx context.Context) error
 	Complete()
 }
 
-type concurrencyLimiter chan struct{}
+type concurrencyLimiter chan bool
 
 func ConcurrencyLimiter(concurrency int) Limiter {
 	if concurrency < 1 {
@@ -19,18 +20,22 @@ func ConcurrencyLimiter(concurrency int) Limiter {
 		for i := 0; i < concurrency; i++ {
 			r.Complete()
 		}
+
 		return r
 	}
 }
 
-func (lim concurrencyLimiter) Start() {
-	<-lim
+func (lim concurrencyLimiter) Start(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-lim:
+		return nil
+	}
 }
 
-var unit struct{}
-
 func (lim concurrencyLimiter) Complete() {
-	lim <- unit
+	lim <- true
 }
 
 type intervalLimiter struct {
@@ -48,9 +53,18 @@ func IntervalLimiter(interval time.Duration) Limiter {
 	}
 }
 
-func (lim intervalLimiter) Start() {
-	prev := <-lim.event
-	time.Sleep(lim.interval - time.Now().Sub(prev))
+func (lim intervalLimiter) Start(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case prevRun := <-lim.event:
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(lim.interval - time.Now().Sub(prevRun)):
+			return nil
+		}
+	}
 }
 
 func (lim intervalLimiter) Complete() {
@@ -61,8 +75,8 @@ var Unlimiter Limiter = unlimiter{}
 
 type unlimiter struct{}
 
-func (unlimiter) Start() {
-
+func (unlimiter) Start(ctx context.Context) error {
+	return nil
 }
 
 func (unlimiter) Complete() {
