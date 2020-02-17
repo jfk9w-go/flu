@@ -17,19 +17,18 @@ type prometheusKey struct {
 type PrometheusClient struct {
 	prefix  string
 	entries map[prometheusKey]interface{}
-	mu      *sync.RWMutex
+	mu      sync.RWMutex
 }
 
-func NewPrometheusClient(address string) PrometheusClient {
+func NewPrometheusClient(address string) *PrometheusClient {
 	http.Handle("/metrics", promhttp.Handler())
 	go func() { log.Fatal(http.ListenAndServe(address, nil)) }()
-	return PrometheusClient{
+	return &PrometheusClient{
 		entries: make(map[prometheusKey]interface{}),
-		mu:      new(sync.RWMutex),
 	}
 }
 
-func (p PrometheusClient) WithPrefix(prefix string) Client {
+func (p *PrometheusClient) WithPrefix(prefix string) Client {
 	if p.prefix != "" {
 		p.prefix += "_" + prefix
 	} else {
@@ -38,7 +37,7 @@ func (p PrometheusClient) WithPrefix(prefix string) Client {
 	return p
 }
 
-func (p PrometheusClient) Counter(name string, labels Labels) Counter {
+func (p *PrometheusClient) Counter(name string, labels Labels) Counter {
 	key := prometheusKey{p.prefix, name}
 	p.mu.RLock()
 	entry, ok := p.entries[key]
@@ -73,7 +72,7 @@ func (p PrometheusClient) Counter(name string, labels Labels) Counter {
 	return entry.(Counter)
 }
 
-func (p PrometheusClient) Gauge(name string, labels Labels) Gauge {
+func (p *PrometheusClient) Gauge(name string, labels Labels) Gauge {
 	key := prometheusKey{p.prefix, name}
 	p.mu.RLock()
 	entry, ok := p.entries[key]
@@ -109,6 +108,6 @@ func (p PrometheusClient) Gauge(name string, labels Labels) Gauge {
 	return entry.(Gauge)
 }
 
-func (p PrometheusClient) Close() error {
+func (p *PrometheusClient) Close() error {
 	return nil
 }

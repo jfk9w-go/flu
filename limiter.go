@@ -5,18 +5,18 @@ import (
 	"time"
 )
 
-type Limiter interface {
+type RateLimiter interface {
 	Start(ctx context.Context) error
 	Complete()
 }
 
-type concurrencyLimiter chan bool
+type concurrencyRateLimiter chan bool
 
-func ConcurrencyLimiter(concurrency int) Limiter {
+func ConcurrencyRateLimiter(concurrency int) RateLimiter {
 	if concurrency < 1 {
-		return unlimiter{}
+		return rateUnlimiter{}
 	} else {
-		r := make(concurrencyLimiter, concurrency)
+		r := make(concurrencyRateLimiter, concurrency)
 		for i := 0; i < concurrency; i++ {
 			r.Complete()
 		}
@@ -25,7 +25,7 @@ func ConcurrencyLimiter(concurrency int) Limiter {
 	}
 }
 
-func (lim concurrencyLimiter) Start(ctx context.Context) error {
+func (lim concurrencyRateLimiter) Start(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -34,26 +34,26 @@ func (lim concurrencyLimiter) Start(ctx context.Context) error {
 	}
 }
 
-func (lim concurrencyLimiter) Complete() {
+func (lim concurrencyRateLimiter) Complete() {
 	lim <- true
 }
 
-type intervalLimiter struct {
+type intervalRateLimiter struct {
 	event    chan time.Time
 	interval time.Duration
 }
 
-func IntervalLimiter(interval time.Duration) Limiter {
+func IntervalRateLimiter(interval time.Duration) RateLimiter {
 	if interval <= 0 {
-		return unlimiter{}
+		return rateUnlimiter{}
 	} else {
 		event := make(chan time.Time, 1)
 		event <- time.Unix(0, 0)
-		return intervalLimiter{event, interval}
+		return intervalRateLimiter{event, interval}
 	}
 }
 
-func (lim intervalLimiter) Start(ctx context.Context) error {
+func (lim intervalRateLimiter) Start(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -67,18 +67,18 @@ func (lim intervalLimiter) Start(ctx context.Context) error {
 	}
 }
 
-func (lim intervalLimiter) Complete() {
+func (lim intervalRateLimiter) Complete() {
 	lim.event <- time.Now()
 }
 
-var Unlimiter Limiter = unlimiter{}
+var RateUnlimiter RateLimiter = rateUnlimiter{}
 
-type unlimiter struct{}
+type rateUnlimiter struct{}
 
-func (unlimiter) Start(ctx context.Context) error {
+func (rateUnlimiter) Start(ctx context.Context) error {
 	return nil
 }
 
-func (unlimiter) Complete() {
+func (rateUnlimiter) Complete() {
 
 }

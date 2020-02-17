@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"log"
 	"net"
 	"strconv"
@@ -59,38 +60,37 @@ type GraphiteClient struct {
 	address string
 	prefix  string
 	metrics map[string]GraphiteMetric
-	work    *sync.WaitGroup
-	halt    chan struct{}
-	mu      *sync.RWMutex
+	work    sync.WaitGroup
+	cancel  context.CancelFunc
+	mu      sync.RWMutex
 }
 
-func NewGraphiteClient(address string, interval time.Duration) GraphiteClient {
-	g := GraphiteClient{
+func NewGraphiteClient(address string, interval time.Duration) *GraphiteClient {
+	ctx, cancel := context.WithCancel(context.Background())
+	client := &GraphiteClient{
 		address: address,
 		metrics: make(map[string]GraphiteMetric),
-		work:    new(sync.WaitGroup),
-		halt:    make(chan struct{}),
-		mu:      new(sync.RWMutex),
+		cancel:  cancel,
 	}
 
-	g.work.Add(1)
+	client.work.Add(1)
 	go func() {
-		defer g.work.Done()
+		defer client.work.Done()
 		timer := time.NewTimer(interval)
 		for {
 			select {
-			case <-g.halt:
+			case <-ctx.Done():
 				return
 			case now := <-timer.C:
-				g.FlushValues(now)
+				client.FlushValues(now)
 			}
 		}
 	}()
 
-	return g
+	return client
 }
 
-func (g GraphiteClient) FlushValues(now time.Time) {
+func (g *GraphiteClient) FlushValues(now time.Time) {
 	b := new(strings.Builder)
 	nowstr := strconv.FormatInt(now.UnixNano()/1e6, 10)
 
@@ -126,14 +126,14 @@ func (g GraphiteClient) FlushValues(now time.Time) {
 	}
 }
 
-func (g GraphiteClient) Close() error {
-	g.halt <- struct{}{}
-	g.FlushValues(time.Now())
+func (g *GraphiteClient) Close() error {
+	g.cancel()
 	g.work.Wait()
+	g.FlushValues(time.Now())
 	return nil
 }
 
-func (g GraphiteClient) WithPrefix(prefix string) Client {
+func (g *GraphiteClient) WithPrefix(prefix string) Client {
 	if g.prefix != "" {
 		g.prefix += "."
 	}
@@ -142,7 +142,7 @@ func (g GraphiteClient) WithPrefix(prefix string) Client {
 	return g
 }
 
-func (g GraphiteClient) Counter(name string, labels Labels) Counter {
+func (g *GraphiteClient) Counter(name string, labels Labels) Counter {
 	key := g.makeKey(name, labels)
 
 	g.mu.RLock()
@@ -162,7 +162,7 @@ func (g GraphiteClient) Counter(name string, labels Labels) Counter {
 	return entry.(Counter)
 }
 
-func (g GraphiteClient) Gauge(name string, labels Labels) Gauge {
+func (g *GraphiteClient) Gauge(name string, labels Labels) Gauge {
 	key := g.makeKey(name, labels)
 
 	g.mu.RLock()
@@ -182,7 +182,7 @@ func (g GraphiteClient) Gauge(name string, labels Labels) Gauge {
 	return entry.(Gauge)
 }
 
-func (g GraphiteClient) makeKey(name string, labels Labels) string {
+func (g *GraphiteClient) makeKey(name string, labels Labels) string {
 	prefix := g.prefix
 	if prefix != "" {
 		prefix += "."

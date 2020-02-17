@@ -11,16 +11,16 @@ import (
 
 // Transport is a fluent wrapper around *http.Transport.
 type Transport struct {
-	http    *http.Transport
-	limiter Limiter
+	http        *http.Transport
+	rateLimiter RateLimiter
 }
 
 // NewTransport initializes a new Transport with default settings.
 // This should be equivalent to http.DefaultTransport
 func NewTransport() *Transport {
 	return &Transport{
-		http:    http.DefaultTransport.(*http.Transport).Clone(),
-		limiter: Unlimiter,
+		http:        http.DefaultTransport.(*http.Transport).Clone(),
+		rateLimiter: RateUnlimiter,
 	}
 }
 
@@ -94,14 +94,16 @@ func (t *Transport) ExpectContinueTimeout(value time.Duration) *Transport {
 	return t
 }
 
-func (t *Transport) Restraint(limiter Limiter) *Transport {
-	t.limiter = limiter
+func (t *Transport) RateLimiter(limiter RateLimiter) *Transport {
+	t.rateLimiter = limiter
 	return t
 }
 
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	t.limiter.Start()
-	defer t.limiter.Complete()
+	if err := t.rateLimiter.Start(req.Context()); err != nil {
+		return nil, err
+	}
+	defer t.rateLimiter.Complete()
 	return t.http.RoundTrip(req)
 }
 
