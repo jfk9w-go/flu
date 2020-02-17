@@ -93,7 +93,3 @@ func (d DummyClient) Gauge(name string, labels Labels) Gauge {
 		Log:    d.log,
 	}
 }
-
-func (DummyClient) Close() error {
-	return nil
-}

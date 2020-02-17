@@ -61,22 +61,24 @@ type GraphiteClient struct {
 	prefix  string
 	metrics map[string]GraphiteMetric
 	work    sync.WaitGroup
-	cancel  context.CancelFunc
 	mu      sync.RWMutex
 }
 
-func NewGraphiteClient(address string, interval time.Duration) *GraphiteClient {
-	ctx, cancel := context.WithCancel(context.Background())
+func NewGraphiteClient(ctx context.Context, address string, interval time.Duration) *GraphiteClient {
 	client := &GraphiteClient{
 		address: address,
 		metrics: make(map[string]GraphiteMetric),
-		cancel:  cancel,
 	}
 
 	client.work.Add(1)
 	go func() {
-		defer client.work.Done()
 		timer := time.NewTimer(interval)
+		defer func() {
+			client.FlushValues(time.Now())
+			timer.Stop()
+			client.work.Done()
+		}()
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -88,6 +90,11 @@ func NewGraphiteClient(address string, interval time.Duration) *GraphiteClient {
 	}()
 
 	return client
+}
+
+func (g *GraphiteClient) Shutdown(cancel context.CancelFunc) {
+	cancel()
+	g.work.Wait()
 }
 
 func (g *GraphiteClient) FlushValues(now time.Time) {
@@ -124,13 +131,6 @@ func (g *GraphiteClient) FlushValues(now time.Time) {
 	if err != nil {
 		log.Printf("Failed to write data to graphite on %s: %s", g.address, err)
 	}
-}
-
-func (g *GraphiteClient) Close() error {
-	g.cancel()
-	g.work.Wait()
-	g.FlushValues(time.Now())
-	return nil
 }
 
 func (g *GraphiteClient) WithPrefix(prefix string) Client {

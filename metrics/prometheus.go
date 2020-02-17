@@ -107,7 +107,3 @@ func (p *PrometheusClient) Gauge(name string, labels Labels) Gauge {
 
 	return entry.(Gauge)
 }
-
-func (p *PrometheusClient) Close() error {
-	return nil
-}

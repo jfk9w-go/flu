@@ -1,13 +1,11 @@
 package metrics
 
 import (
-	"io"
 	"sort"
 	"strings"
 )
 
 type Client interface {
-	io.Closer
 	WithPrefix(prefix string) Client
 	Counter(name string, labels Labels) Counter
 	Gauge(name string, labels Labels) Gauge
