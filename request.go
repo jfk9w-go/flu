@@ -19,6 +19,7 @@ type Request struct {
 	bodyEncoder BodyEncoderTo
 	buffer      bool
 	statusCodes map[int]struct{}
+	ctx         context.Context
 }
 
 // AddHeader adds a request header.
@@ -98,18 +99,18 @@ func (r *Request) Buffer() *Request {
 	return r
 }
 
+func (r *Request) Context(ctx context.Context) *Request {
+	r.ctx = ctx
+	return r
+}
+
 // Send executes the request and returns a response.
 func (r *Request) Execute() *Response {
-	resp, err := r.do(nil)
+	resp, err := r.do()
 	return &Response{resp, err}
 }
 
-func (r *Request) SendWithContext(ctx context.Context) *Response {
-	resp, err := r.do(ctx)
-	return &Response{resp, err}
-}
-
-func (r *Request) do(ctx context.Context) (*http.Response, error) {
+func (r *Request) do() (*http.Response, error) {
 	body, err := r.content()
 	if err != nil {
 		return nil, err
@@ -121,6 +122,7 @@ func (r *Request) do(ctx context.Context) (*http.Response, error) {
 	if r.bodyEncoder != nil {
 		req.Header.Set("Content-Type", r.bodyEncoder.ContentType())
 	}
+
 	if req.URL.RawQuery != "" {
 		req.URL.RawQuery += "&"
 	}
@@ -134,12 +136,15 @@ func (r *Request) do(ctx context.Context) (*http.Response, error) {
 			}
 		}
 	}
+
 	if r.basicAuth[0] != "" && r.basicAuth[1] != "" {
 		req.SetBasicAuth(r.basicAuth[0], r.basicAuth[1])
 	}
-	if ctx != nil {
-		req = req.WithContext(ctx)
+
+	if r.ctx != nil {
+		req = req.WithContext(r.ctx)
 	}
+
 	resp, err := r.http.Do(req)
 	if err != nil {
 		return nil, err
@@ -149,6 +154,7 @@ func (r *Request) do(ctx context.Context) (*http.Response, error) {
 			return nil, NewStatusCodeError(resp)
 		}
 	}
+
 	return resp, nil
 }
 
