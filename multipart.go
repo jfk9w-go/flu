@@ -59,7 +59,7 @@ func randomBoundary() string {
 	return fmt.Sprintf("%x", buf[:])
 }
 
-func (f MultipartForm) WriteTo(w io.Writer) error {
+func (f MultipartForm) EncodeTo(w io.Writer) error {
 	mw := multipart.NewWriter(w)
 	//noinspection GoUnhandledErrorResult
 	defer mw.Close()

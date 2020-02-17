@@ -46,7 +46,7 @@ func NewStatusCodeError(r *http.Response) StatusCodeError {
 	if r.Body != nil {
 		defer r.Body.Close()
 		text := PlainText("")
-		err := text.ReadFrom(r.Body)
+		err := text.DecodeFrom(r.Body)
 		if err != nil {
 			text.Value = fmt.Sprintf("response body read error: %s", err.Error())
 		}
@@ -68,12 +68,12 @@ func (r *Response) CheckStatusCode(codes ...int) *Response {
 	return r.complete(NewStatusCodeError(r.http))
 }
 
-// Read reads the response body.
-func (r *Response) Read(reader ReaderFrom) *Response {
+// Decode reads the response body.
+func (r *Response) Decode(decoder DecoderFrom) *Response {
 	if r.Error != nil {
 		return r
 	}
-	return r.complete(Read(Xable{R: r.http.Body}, reader))
+	return r.complete(DecodeFrom(Xable{R: r.http.Body}, decoder))
 }
 
 type ContentTypeError string
@@ -82,19 +82,19 @@ func (e ContentTypeError) Error() string {
 	return fmt.Sprintf("invalid content type: %s", string(e))
 }
 
-// ReadBody checks the response Content-Type header.
+// DecodeBody checks the response Content-Type header.
 // If there is no match, sets the error to ContentTypeError.
 // Otherwise proceeds with reading.
-func (r *Response) ReadBody(reader BodyReader) *Response {
+func (r *Response) DecodeBody(decoder BodyDecoderFrom) *Response {
 	if r.Error != nil {
 		return r
 	}
 	contentType := r.http.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, reader.ContentType()) {
+	if !strings.HasPrefix(contentType, decoder.ContentType()) {
 		r.Error = ContentTypeError(contentType)
 		return r
 	}
-	return r.Read(reader)
+	return r.Decode(decoder)
 }
 
 type bodyReaderHandler struct {

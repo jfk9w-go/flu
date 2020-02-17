@@ -2,8 +2,6 @@ package flu_test
 
 import (
 	"fmt"
-	"log"
-	"net/http"
 
 	. "github.com/jfk9w-go/flu"
 )
@@ -19,14 +17,7 @@ func (p *Post) String() string {
 	return fmt.Sprintf("ID: %d\nUserID: %d\nTitle: %s\nBody: %s\n", p.ID, p.UserID, p.Title, p.Body)
 }
 
-func newClient() *Client {
-	return NewClient(http.DefaultClient).
-		AcceptResponseCodes(http.StatusOK, http.StatusCreated)
-}
-
-var ExampleClient = NewTransport().
-	Logger(log.New(log.Writer(), "", log.Flags())).
-	NewClient()
+var ExampleClient = NewTransport().NewClient()
 
 // Example_GET provides an example of performing a GET request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
@@ -35,7 +26,7 @@ func Example_GET() {
 	err := ExampleClient.
 		GET("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
-		ReadBody(JSON(response)).
+		DecodeBody(JSON(response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -60,7 +51,7 @@ func Example_GET_QueryParams() {
 		GET("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
 		Execute().
-		ReadBody(JSON(&response)).
+		DecodeBody(JSON(&response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -84,7 +75,7 @@ func Example_POST() {
 		POST("https://jsonplaceholder.typicode.com/posts").
 		Body(JSON(post)).
 		Execute().
-		ReadBody(JSON(response)).
+		DecodeBody(JSON(response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -111,7 +102,7 @@ func Example_PUT() {
 		PUT("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(post)).
 		Execute().
-		ReadBody(JSON(response)).
+		DecodeBody(JSON(response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -138,7 +129,7 @@ func Example_PATCH() {
 		PATCH("https://jsonplaceholder.typicode.com/posts/1").
 		Body(JSON(post)).
 		Execute().
-		ReadBody(JSON(response)).
+		DecodeBody(JSON(response)).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -159,7 +150,7 @@ func Example_DELETE() {
 	err := ExampleClient.
 		DELETE("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
-		Read(response).
+		Decode(response).
 		Error
 	if err != nil {
 		fmt.Println(err)

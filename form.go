@@ -31,7 +31,7 @@ func EmptyForm(withValues bool) Form {
 	return FormValue(nil, withValues)
 }
 
-func (form Form) WriteTo(writer io.Writer) error {
+func (form Form) EncodeTo(writer io.Writer) error {
 	values, err := form.encodeValue()
 	if err != nil {
 		return err

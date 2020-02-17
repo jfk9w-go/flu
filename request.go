@@ -16,7 +16,7 @@ type Request struct {
 	headers     http.Header
 	basicAuth   [2]string
 	queryParams url.Values
-	body        BodyWriter
+	bodyEncoder BodyEncoderTo
 	buffer      bool
 	statusCodes map[int]struct{}
 }
@@ -87,8 +87,8 @@ func (r *Request) QueryParam(key, value string) *Request {
 }
 
 // Body sets the request body.
-func (r *Request) Body(body BodyWriter) *Request {
-	r.body = body
+func (r *Request) Body(body BodyEncoderTo) *Request {
+	r.bodyEncoder = body
 	return r
 }
 
@@ -118,8 +118,8 @@ func (r *Request) do(ctx context.Context) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	if r.body != nil {
-		req.Header.Set("Content-Type", r.body.ContentType())
+	if r.bodyEncoder != nil {
+		req.Header.Set("Content-Type", r.bodyEncoder.ContentType())
 	}
 	if req.URL.RawQuery != "" {
 		req.URL.RawQuery += "&"
@@ -153,24 +153,24 @@ func (r *Request) do(ctx context.Context) (*http.Response, error) {
 }
 
 func (r *Request) content() (io.Reader, error) {
-	if r.body == nil {
+	if r.bodyEncoder == nil {
 		return nil, nil
 	}
 	var body Readable
 	if r.buffer {
-		if bb, ok := r.body.(bufferedBody); ok {
+		if bb, ok := r.bodyEncoder.(bufferedBody); ok {
 			body = bb.buf
 		} else {
 			buf := NewBuffer()
-			err := Write(r.body, buf)
+			err := EncodeTo(r.bodyEncoder, buf)
 			if err != nil {
 				return nil, err
 			}
-			r.body = bufferedBody{buf, r.body.ContentType()}
+			r.bodyEncoder = bufferedBody{buf, r.bodyEncoder.ContentType()}
 			body = buf
 		}
 	} else {
-		body = PipeOut(r.body)
+		body = Input(r.bodyEncoder)
 	}
 	return body.Reader()
 }
@@ -180,7 +180,7 @@ type bufferedBody struct {
 	contentType string
 }
 
-func (bb bufferedBody) WriteTo(w io.Writer) error {
+func (bb bufferedBody) EncodeTo(w io.Writer) error {
 	_, err := bb.buf.WriteTo(w)
 	return err
 }

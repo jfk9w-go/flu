@@ -18,93 +18,90 @@ type ReadWritable interface {
 	Writable
 }
 
-type WriterTo interface {
-	WriteTo(io.Writer) error
+type EncoderTo interface {
+	EncodeTo(io.Writer) error
 }
 
-type ReaderFrom interface {
-	ReadFrom(io.Reader) error
+type DecoderFrom interface {
+	DecodeFrom(io.Reader) error
 }
 
 type Body interface {
 	ContentType() string
 }
 
-type BodyWriter interface {
+type BodyEncoderTo interface {
 	Body
-	WriterTo
+	EncoderTo
 }
 
-type BodyReader interface {
+type BodyDecoderFrom interface {
 	Body
-	ReaderFrom
+	DecoderFrom
 }
 
-type BodyReadWriter interface {
+type BodyCodec interface {
 	Body
-	WriterTo
-	ReaderFrom
+	EncoderTo
+	DecoderFrom
 }
 
-func Write(writer WriterTo, out Writable) error {
-	w, err := out.Writer()
+func EncodeTo(encoder EncoderTo, out Writable) error {
+	writer, err := out.Writer()
 	if err != nil {
 		return err
 	}
-	//noinspection GoUnhandledErrorResult
-	if w, ok := w.(io.Closer); ok {
-		defer w.Close()
+	if closer, ok := writer.(io.Closer); ok {
+		defer closer.Close()
 	}
-	return writer.WriteTo(w)
+	return encoder.EncodeTo(writer)
 }
 
-func Read(in Readable, reader ReaderFrom) error {
-	r, err := in.Reader()
+func DecodeFrom(in Readable, decoder DecoderFrom) error {
+	reader, err := in.Reader()
 	if err != nil {
 		return err
 	}
-	//noinspection GoUnhandledErrorResult
-	if r, ok := r.(io.Closer); ok {
-		defer r.Close()
+	if closer, ok := reader.(io.Closer); ok {
+		defer closer.Close()
 	}
-	return reader.ReadFrom(r)
+	return decoder.DecodeFrom(reader)
 }
 
-func PipeOut(writer WriterTo) Readable {
-	out, in := io.Pipe()
+func Input(encoder EncoderTo) Readable {
+	reader, writer := io.Pipe()
 	go func() {
-		err := writer.WriteTo(in)
-		_ = in.CloseWithError(err)
+		err := encoder.EncodeTo(writer)
+		_ = writer.CloseWithError(err)
 	}()
-	return Xable{R: out}
+	return Xable{R: reader}
 }
 
-func PipeIn(reader ReaderFrom) Writable {
-	out, in := io.Pipe()
+func Output(decoder DecoderFrom) Writable {
+	reader, writer := io.Pipe()
 	go func() {
-		err := reader.ReadFrom(out)
-		_ = out.CloseWithError(err)
+		err := decoder.DecodeFrom(reader)
+		_ = reader.CloseWithError(err)
 	}()
-	return Xable{W: in}
+	return Xable{W: writer}
 }
 
-//noinspection GoUnhandledErrorResult
 func Copy(in Readable, out Writable) error {
-	r, err := in.Reader()
+	reader, err := in.Reader()
 	if err != nil {
 		return err
 	}
-	if r, ok := r.(io.Closer); ok {
-		defer r.Close()
+	if closer, ok := reader.(io.Closer); ok {
+		defer closer.Close()
 	}
-	w, err := out.Writer()
+	writer, err := out.Writer()
 	if err != nil {
 		return err
 	}
-	if w, ok := w.(io.Closer); ok {
-		defer w.Close()
+	if closer, ok := writer.(io.Closer); ok {
+		defer closer.Close()
 	}
-	_, err = io.Copy(w, r)
+	_, err = io.Copy(writer, reader)
 	return err
 }
 
