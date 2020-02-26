@@ -2,7 +2,6 @@ package flu
 
 import (
 	"io"
-	"net/http"
 )
 
 type Readable interface {
@@ -68,7 +67,7 @@ func DecodeFrom(in Readable, decoder DecoderFrom) error {
 	return decoder.DecodeFrom(reader)
 }
 
-func Input(encoder EncoderTo) Readable {
+func AsReadable(encoder EncoderTo) Readable {
 	reader, writer := io.Pipe()
 	go func() {
 		err := encoder.EncodeTo(writer)
@@ -77,7 +76,7 @@ func Input(encoder EncoderTo) Readable {
 	return Xable{R: reader}
 }
 
-func Output(decoder DecoderFrom) Writable {
+func AsWritable(decoder DecoderFrom) Writable {
 	reader, writer := io.Pipe()
 	go func() {
 		err := decoder.DecodeFrom(reader)
@@ -104,5 +103,3 @@ func Copy(in Readable, out Writable) error {
 	_, err = io.Copy(writer, reader)
 	return err
 }
-
-var DefaultClient = NewClient(http.DefaultClient)

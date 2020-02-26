@@ -1,9 +1,11 @@
-package flu_test
+package main
 
 import (
 	"fmt"
+	"log"
 
 	. "github.com/jfk9w-go/flu"
+	. "github.com/jfk9w-go/flu/httpx"
 )
 
 type Post struct {
@@ -17,7 +19,22 @@ func (p *Post) String() string {
 	return fmt.Sprintf("ID: %d\nUserID: %d\nTitle: %s\nBody: %s\n", p.ID, p.UserID, p.Title, p.Body)
 }
 
-var ExampleClient = NewTransport().NewClient()
+var ExampleClient = NewClient(nil)
+
+func main() {
+	log.Printf("GET")
+	Example_GET()
+	log.Printf("GET with query parameters")
+	Example_GET_QueryParams()
+	log.Printf("POST")
+	Example_POST()
+	log.Printf("PUT")
+	Example_PUT()
+	log.Printf("PATCH")
+	Example_PATCH()
+	log.Printf("DELETE")
+	Example_DELETE()
+}
 
 // Example_GET provides an example of performing a GET request.
 // See https://jsonplaceholder.typicode.com/ for resource description.

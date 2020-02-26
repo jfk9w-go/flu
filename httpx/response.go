@@ -1,15 +1,17 @@
-package flu
+package httpx
 
 import (
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/jfk9w-go/flu"
 )
 
 // Response is a fluent response wrapper.
 type Response struct {
-	http *http.Response
+	*http.Response
 
 	// Error contains an error in case of a request processing error
 	// or nil in case of success.
@@ -21,11 +23,11 @@ type ResponseHandler interface {
 }
 
 // HandleResponse executes a ResponseHandler if no previous handling errors occurred.
-func (r *Response) HandleResponse(handler ResponseHandler) *Response {
+func (r Response) HandleResponse(handler ResponseHandler) Response {
 	if r.Error != nil {
 		return r
 	}
-	return r.complete(handler.Handle(r.http))
+	return r.complete(handler.Handle(r.Response))
 }
 
 type StatusCodeError struct {
@@ -38,58 +40,60 @@ func (e StatusCodeError) Error() string {
 	if e.Text != "" {
 		text += " (" + e.Text + ")"
 	}
+
 	return text
 }
 
 func NewStatusCodeError(r *http.Response) StatusCodeError {
 	e := StatusCodeError{Code: r.StatusCode}
 	if r.Body != nil {
-		defer r.Body.Close()
-		text := PlainText("")
-		err := text.DecodeFrom(r.Body)
-		if err != nil {
-			text.Value = fmt.Sprintf("response body read error: %s", err.Error())
+		text := flu.PlainText("")
+		if err := flu.DecodeFrom(flu.Xable{R: r.Body}, text); err != nil {
+			e.Text = fmt.Sprintf("response body read error: %s", err.Error())
+		} else {
+			e.Text = text.Value
 		}
-		e.Text = text.Value
 	}
+
 	return e
 }
 
-// CheckStatusCode checks the response status code and sets the error to StatusCodeError if there is no match.
-func (r *Response) CheckStatusCode(codes ...int) *Response {
+// AcceptStatus checks the response status code and sets the error to StatusCodeError if there is no match.
+func (r Response) AcceptStatus(codes ...int) Response {
 	if r.Error != nil {
 		return r
 	}
 	for _, c := range codes {
-		if c == r.http.StatusCode {
+		if c == r.StatusCode {
 			return r
 		}
 	}
-	return r.complete(NewStatusCodeError(r.http))
+
+	return r.complete(NewStatusCodeError(r.Response))
 }
 
 // Decode reads the response body.
-func (r *Response) Decode(decoder DecoderFrom) *Response {
+func (r Response) Decode(decoder flu.DecoderFrom) Response {
 	if r.Error != nil {
 		return r
 	}
-	return r.complete(DecodeFrom(Xable{R: r.http.Body}, decoder))
+	return r.complete(flu.DecodeFrom(flu.Xable{R: r.Body}, decoder))
 }
 
 type ContentTypeError string
 
 func (e ContentTypeError) Error() string {
-	return fmt.Sprintf("invalid content type: %s", string(e))
+	return fmt.Sprintf("invalid bodyReader type: %s", string(e))
 }
 
 // DecodeBody checks the response Content-Type header.
 // If there is no match, sets the error to ContentTypeError.
 // Otherwise proceeds with reading.
-func (r *Response) DecodeBody(decoder BodyDecoderFrom) *Response {
+func (r Response) DecodeBody(decoder flu.BodyDecoderFrom) Response {
 	if r.Error != nil {
 		return r
 	}
-	contentType := r.http.Header.Get("Content-Type")
+	contentType := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, decoder.ContentType()) {
 		r.Error = ContentTypeError(contentType)
 		return r
@@ -106,7 +110,7 @@ func (b *bodyReaderHandler) Handle(resp *http.Response) error {
 	return nil
 }
 
-func (r *Response) Reader() (io.Reader, error) {
+func (r Response) Reader() (io.Reader, error) {
 	if r.Error != nil {
 		return nil, r.Error
 	}
@@ -123,15 +127,14 @@ func (e WritableError) Error() string {
 	return fmt.Sprintf("failed to create writer: %s", e.Err)
 }
 
-//noinspection GoUnhandledErrorResult
-func (r *Response) ReadBodyTo(writable Writable) *Response {
+func (r Response) DecodeBodyTo(out flu.Writable) Response {
 	if r.Error != nil {
 		return r
 	}
-	return r.complete(Copy(Xable{R: r.http.Body}, writable))
+	return r.complete(flu.Copy(flu.Xable{R: r.Body}, out))
 }
 
-func (r *Response) complete(err error) *Response {
+func (r Response) complete(err error) Response {
 	r.Error = err
 	return r
 }

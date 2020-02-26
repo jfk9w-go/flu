@@ -11,7 +11,7 @@ import (
 )
 
 type GraphiteMetric interface {
-	Reset() (float64, bool)
+	Reset() (last float64, set bool)
 }
 
 type GraphiteCounter AtomicFloat64
@@ -27,7 +27,7 @@ func (c *GraphiteCounter) Add(delta float64) {
 func (c *GraphiteCounter) Reset() (float64, bool) {
 	zero := float64(0)
 	value := (*AtomicFloat64)(c).Swap(zero)
-	return value, value == zero
+	return value, value != zero
 }
 
 type GraphiteGauge AtomicFloat64
@@ -60,12 +60,12 @@ type GraphiteClient struct {
 	address string
 	prefix  string
 	metrics map[string]GraphiteMetric
-	work    sync.WaitGroup
-	mu      sync.RWMutex
+	work    *sync.WaitGroup
+	mu      *sync.RWMutex
 }
 
-func NewGraphiteClient(ctx context.Context, address string, interval time.Duration) *GraphiteClient {
-	client := &GraphiteClient{
+func NewGraphiteClient(ctx context.Context, address string, interval time.Duration) GraphiteClient {
+	client := GraphiteClient{
 		address: address,
 		metrics: make(map[string]GraphiteMetric),
 	}
@@ -74,8 +74,8 @@ func NewGraphiteClient(ctx context.Context, address string, interval time.Durati
 	go func() {
 		timer := time.NewTimer(interval)
 		defer func() {
-			client.FlushValues(time.Now())
 			timer.Stop()
+			client.FlushValues(time.Now())
 			client.work.Done()
 		}()
 
@@ -92,19 +92,19 @@ func NewGraphiteClient(ctx context.Context, address string, interval time.Durati
 	return client
 }
 
-func (g *GraphiteClient) Shutdown(cancel context.CancelFunc) {
+func (g GraphiteClient) Shutdown(cancel context.CancelFunc) {
 	cancel()
 	g.work.Wait()
 }
 
-func (g *GraphiteClient) FlushValues(now time.Time) {
+func (g GraphiteClient) FlushValues(now time.Time) {
 	b := new(strings.Builder)
 	nowstr := strconv.FormatInt(now.UnixNano()/1e6, 10)
 
 	g.mu.RLock()
 	for key, metric := range g.metrics {
-		value, reset := metric.Reset()
-		if !reset {
+		value, set := metric.Reset()
+		if !set {
 			continue
 		}
 
@@ -133,7 +133,7 @@ func (g *GraphiteClient) FlushValues(now time.Time) {
 	}
 }
 
-func (g *GraphiteClient) WithPrefix(prefix string) Client {
+func (g GraphiteClient) WithPrefix(prefix string) Client {
 	if g.prefix != "" {
 		g.prefix += "."
 	}
@@ -142,7 +142,7 @@ func (g *GraphiteClient) WithPrefix(prefix string) Client {
 	return g
 }
 
-func (g *GraphiteClient) Counter(name string, labels Labels) Counter {
+func (g GraphiteClient) Counter(name string, labels Labels) Counter {
 	key := g.makeKey(name, labels)
 
 	g.mu.RLock()
@@ -162,7 +162,7 @@ func (g *GraphiteClient) Counter(name string, labels Labels) Counter {
 	return entry.(Counter)
 }
 
-func (g *GraphiteClient) Gauge(name string, labels Labels) Gauge {
+func (g GraphiteClient) Gauge(name string, labels Labels) Gauge {
 	key := g.makeKey(name, labels)
 
 	g.mu.RLock()
@@ -182,7 +182,7 @@ func (g *GraphiteClient) Gauge(name string, labels Labels) Gauge {
 	return entry.(Gauge)
 }
 
-func (g *GraphiteClient) makeKey(name string, labels Labels) string {
+func (g GraphiteClient) makeKey(name string, labels Labels) string {
 	prefix := g.prefix
 	if prefix != "" {
 		prefix += "."

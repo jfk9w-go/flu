@@ -1,4 +1,4 @@
-package flu
+package httpx
 
 import (
 	"io"
@@ -13,22 +13,6 @@ type Form struct {
 	// values contains values which can be set separately by key
 	// keys from here override the same keys in url.Values transformed from values
 	values url.Values
-}
-
-func FormValue(value interface{}, withValues bool) Form {
-	var values url.Values = nil
-	if withValues {
-		values = make(url.Values)
-	}
-	return Form{value: value, values: values}
-}
-
-func FormValues(values url.Values) Form {
-	return Form{values: values}
-}
-
-func EmptyForm(withValues bool) Form {
-	return FormValue(nil, withValues)
 }
 
 func (form Form) EncodeTo(writer io.Writer) error {
@@ -55,11 +39,19 @@ func (Form) ContentType() string {
 }
 
 func (form Form) Set(key, value string) Form {
+	if form.values == nil {
+		form.values = make(url.Values)
+	}
+
 	form.values.Set(key, value)
 	return form
 }
 
 func (form Form) Add(key, value string) Form {
+	if form.values == nil {
+		form.values = make(url.Values)
+	}
+
 	form.values.Add(key, value)
 	return form
 }
@@ -68,11 +60,51 @@ func (form Form) AddAll(key string, values ...string) Form {
 	for _, v := range values {
 		form.Add(key, v)
 	}
+
+	return form
+}
+
+func (form Form) SetValues(values url.Values) Form {
+	if form.values == nil {
+		form.values = values
+	} else {
+		a, b := form.values, values
+		if len(b) < len(a) {
+			a, b = b, a
+		}
+		for k, v := range a {
+			b[k] = v
+		}
+	}
+
+	return form
+}
+
+func (form Form) AddValues(values url.Values) Form {
+	if form.values == nil {
+		form.values = values
+	} else {
+		a, b := form.values, values
+		if len(b) < len(a) {
+			a, b = b, a
+		}
+		for k, v := range a {
+			b[k] = append(b[k], v...)
+		}
+	}
+
+	return form
+}
+
+func (form Form) Value(value interface{}) Form {
+	form.value = value
 	return form
 }
 
 func (form Form) Multipart() MultipartForm {
-	return MultipartFormFrom(form)
+	multipart := NewMultipartForm()
+	multipart.Form = form
+	return multipart
 }
 
 func (form Form) encodeValue() (url.Values, error) {

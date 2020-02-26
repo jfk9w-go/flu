@@ -1,4 +1,4 @@
-package flu
+package httpx
 
 import (
 	"crypto/rand"
@@ -6,46 +6,57 @@ import (
 	"io"
 	"mime/multipart"
 	"net/url"
+
+	"github.com/jfk9w-go/flu"
 )
 
 type MultipartForm struct {
 	Form
 	boundary string
-	files    map[string]Readable
+	files    map[string]flu.Readable
 }
 
-func EmptyMultipartForm(withFormValues bool) MultipartForm {
-	return MultipartFormFrom(EmptyForm(withFormValues))
-}
-
-func MultipartFormFrom(f Form) MultipartForm {
+func NewMultipartForm() MultipartForm {
 	return MultipartForm{
-		Form:     f,
 		boundary: randomBoundary(),
-		files:    make(map[string]Readable),
 	}
 }
 
-func MultipartFormValues(uv url.Values) MultipartForm {
-	return MultipartFormFrom(FormValues(uv))
-}
-
 func (f MultipartForm) Set(k, v string) MultipartForm {
-	f.Form.Set(k, v)
+	f.Form = f.Form.Set(k, v)
 	return f
 }
 
 func (f MultipartForm) Add(k, v string) MultipartForm {
-	f.Form.Add(k, v)
+	f.Form = f.Form.Add(k, v)
 	return f
 }
 
 func (f MultipartForm) AddAll(k string, vs ...string) MultipartForm {
-	f.Form.AddAll(k, vs...)
+	f.Form = f.Form.AddAll(k, vs...)
 	return f
 }
 
-func (f MultipartForm) File(k string, r Readable) MultipartForm {
+func (f MultipartForm) SetValues(values url.Values) MultipartForm {
+	f.Form = f.Form.SetValues(values)
+	return f
+}
+
+func (f MultipartForm) AddValues(values url.Values) MultipartForm {
+	f.Form = f.Form.AddValues(values)
+	return f
+}
+
+func (f MultipartForm) Value(value interface{}) MultipartForm {
+	f.Form = f.Form.Value(value)
+	return f
+}
+
+func (f MultipartForm) File(k string, r flu.Readable) MultipartForm {
+	if f.files == nil {
+		f.files = make(map[string]flu.Readable)
+	}
+
 	f.files[k] = r
 	return f
 }
@@ -61,7 +72,6 @@ func randomBoundary() string {
 
 func (f MultipartForm) EncodeTo(w io.Writer) error {
 	mw := multipart.NewWriter(w)
-	//noinspection GoUnhandledErrorResult
 	defer mw.Close()
 	err := mw.SetBoundary(f.boundary)
 	if err != nil {
@@ -72,7 +82,7 @@ func (f MultipartForm) EncodeTo(w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		err = Copy(r, Xable{W: w})
+		err = flu.Copy(r, flu.Xable{W: w})
 		if err != nil {
 			return err
 		}
