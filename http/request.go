@@ -15,10 +15,11 @@ import (
 // NewRequest allows to set basic http.NewRequest properties.
 type Request struct {
 	*http.Request
-	client Client
-	query  url.Values
-	body   interface{}
-	err    error
+	client        Client
+	queryParams   url.Values
+	bodyValue     interface{}
+	contentLength int64
+	err           error
 }
 
 // AddHeader adds a request header.
@@ -93,12 +94,12 @@ func (r Request) Auth(auth Authorization) Request {
 	return r
 }
 
-// QueryParam sets a query parameter.
+// QueryParam sets a queryParams parameter.
 func (r Request) QueryParam(key, value string) Request {
 	if r.err != nil {
 		return r
 	}
-	r.query.Set(key, value)
+	r.queryParams.Set(key, value)
 	return r
 }
 
@@ -113,7 +114,15 @@ func (r Request) Body(body interface{}) Request {
 	default:
 		panic(errors.Errorf("unrecognized body type: %T", body))
 	}
-	r.body = body
+	r.bodyValue = body
+	return r
+}
+
+func (r Request) ContentLength(value int64) Request {
+	if r.err != nil {
+		return r
+	}
+	r.Request.ContentLength = value
 	return r
 }
 
@@ -139,12 +148,8 @@ func (r Request) do() (*http.Response, error) {
 		return nil, r.err
 	}
 
-	if r.body != nil {
-		if ext, ok := r.body.(ContentLength); ok {
-			r.Request.ContentLength = ext.ContentLength()
-		}
-
-		if b, ok := r.body.(flu.Input); ok {
+	if r.bodyValue != nil {
+		if b, ok := r.bodyValue.(flu.Input); ok {
 			body, err := b.Reader()
 			if err != nil {
 				return nil, err
@@ -157,7 +162,7 @@ func (r Request) do() (*http.Response, error) {
 			if sized, ok := body.(interface{ Len() int }); ok {
 				r.Request.ContentLength = int64(sized.Len())
 			}
-		} else if b, ok := r.body.(flu.EncoderTo); ok {
+		} else if b, ok := r.bodyValue.(flu.EncoderTo); ok {
 			body, err := flu.ReadablePipe(b).Reader()
 			if err != nil {
 				return nil, err
@@ -165,12 +170,12 @@ func (r Request) do() (*http.Response, error) {
 			r.Request.Body = body.(io.ReadCloser)
 		}
 
-		if ext, ok := r.body.(ContentType); ok {
+		if ext, ok := r.bodyValue.(ContentType); ok {
 			r.Request.Header.Set("Content-Type", ext.ContentType())
 		}
 	}
 
-	r.Request.URL.RawQuery = r.query.Encode()
+	r.Request.URL.RawQuery = r.queryParams.Encode()
 	response, err := r.client.Do(r.Request)
 	if err != nil {
 		return nil, err
