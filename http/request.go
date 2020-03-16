@@ -118,14 +118,6 @@ func (r Request) Body(body interface{}) Request {
 	return r
 }
 
-func (r Request) ContentLength(value int64) Request {
-	if r.err != nil {
-		return r
-	}
-	r.Request.ContentLength = value
-	return r
-}
-
 func (r Request) Context(ctx context.Context) Request {
 	if r.err != nil {
 		return r
@@ -191,8 +183,4 @@ func (r Request) do() (*http.Response, error) {
 
 type ContentType interface {
 	ContentType() string
-}
-
-type ContentLength interface {
-	ContentLength() int64
 }
