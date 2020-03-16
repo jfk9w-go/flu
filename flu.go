@@ -67,7 +67,7 @@ func DecodeFrom(in Readable, decoder DecoderFrom) error {
 	return decoder.DecodeFrom(reader)
 }
 
-func AsReadable(encoder EncoderTo) Readable {
+func ReadablePipe(encoder EncoderTo) Readable {
 	reader, writer := io.Pipe()
 	go func() {
 		err := encoder.EncodeTo(writer)
@@ -76,7 +76,7 @@ func AsReadable(encoder EncoderTo) Readable {
 	return Xable{R: reader}
 }
 
-func AsWritable(decoder DecoderFrom) Writable {
+func WritablePipe(decoder DecoderFrom) Writable {
 	reader, writer := io.Pipe()
 	go func() {
 		err := decoder.DecodeFrom(reader)

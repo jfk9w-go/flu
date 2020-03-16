@@ -83,7 +83,7 @@ func (r Response) Decode(decoder flu.DecoderFrom) Response {
 type ContentTypeError string
 
 func (e ContentTypeError) Error() string {
-	return fmt.Sprintf("invalid bodyReader type: %s", string(e))
+	return fmt.Sprintf("invalid body type: %s", string(e))
 }
 
 // DecodeBody checks the response Content-Type header.

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/pkg/errors"
+
 	"github.com/jfk9w-go/flu"
 )
 
@@ -16,7 +18,7 @@ type Request struct {
 	*http.Request
 	client Client
 	query  url.Values
-	body   flu.BodyEncoderTo
+	body   flu.Body
 	err    error
 }
 
@@ -102,9 +104,15 @@ func (r Request) QueryParam(key, value string) Request {
 }
 
 // Body sets the request body.
-func (r Request) Body(body flu.BodyEncoderTo) Request {
+func (r Request) Body(body flu.Body) Request {
 	if r.err != nil {
 		return r
+	}
+	switch body.(type) {
+	case flu.BodyEncoderTo:
+	case flu.Readable:
+	default:
+		panic(errors.Errorf("unrecognized body type: %T", body))
 	}
 	r.body = body
 	return r
@@ -129,19 +137,37 @@ func (r Request) do() (*http.Response, error) {
 		return nil, r.err
 	}
 
-	body, err := r.bodyReader()
-	if err != nil {
-		return nil, err
-	} else if body != nil {
-		if rc, ok := body.(io.ReadCloser); ok {
-			r.Request.Body = rc
-		} else {
-			r.Request.Body = ioutil.NopCloser(body)
+	if r.body != nil {
+		if cl, ok := r.body.(ContentLength); ok {
+			contentLength, err := cl.ContentLength()
+			if err != nil {
+				return nil, err
+			}
+			r.Request.ContentLength = contentLength
 		}
+
+		if b, ok := r.body.(flu.Readable); ok {
+			body, err := b.Reader()
+			if err != nil {
+				return nil, err
+			}
+			if body, ok := body.(io.ReadCloser); ok {
+				r.Request.Body = body
+			} else {
+				r.Request.Body = ioutil.NopCloser(body)
+			}
+			if sized, ok := body.(interface{ Len() int }); ok {
+				r.Request.ContentLength = int64(sized.Len())
+			}
+		} else if b, ok := r.body.(flu.BodyEncoderTo); ok {
+			body, err := flu.ReadablePipe(b).Reader()
+			if err != nil {
+				return nil, err
+			}
+			r.Request.Body = body.(io.ReadCloser)
+		}
+
 		r.Request.Header.Set("Content-Type", r.body.ContentType())
-		if c, ok := body.(intLen); ok {
-			r.ContentLength = int64(c.Len())
-		}
 	}
 
 	r.Request.URL.RawQuery = r.query.Encode()
@@ -158,13 +184,6 @@ func (r Request) do() (*http.Response, error) {
 	return response, nil
 }
 
-type intLen interface {
-	Len() int
-}
-
-func (r Request) bodyReader() (io.Reader, error) {
-	if r.body == nil {
-		return nil, nil
-	}
-	return flu.AsReadable(r.body).Reader()
+type ContentLength interface {
+	ContentLength() (int64, error)
 }

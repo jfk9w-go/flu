@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"time"
 
 	. "github.com/jfk9w-go/flu"
 	. "github.com/jfk9w-go/flu/httpx"
@@ -19,7 +21,10 @@ func (p *Post) String() string {
 	return fmt.Sprintf("ID: %d\nUserID: %d\nTitle: %s\nBody: %s\n", p.ID, p.UserID, p.Title, p.Body)
 }
 
-var ExampleClient = NewClient(nil)
+var ExampleClient = NewTransport().
+	ResponseHeaderTimeout(1 * time.Second).
+	NewClient().
+	AcceptStatus(http.StatusOK)
 
 func main() {
 	log.Printf("GET")

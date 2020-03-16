@@ -1,4 +1,4 @@
-package metrics
+package metrix
 
 import (
 	"log"
