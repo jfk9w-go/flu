@@ -140,12 +140,8 @@ func (r Request) do() (*http.Response, error) {
 	}
 
 	if r.body != nil {
-		if cl, ok := r.body.(ContentLength); ok {
-			contentLength, err := cl.ContentLength()
-			if err != nil {
-				return nil, err
-			}
-			r.Request.ContentLength = contentLength
+		if ext, ok := r.body.(ContentLength); ok {
+			r.Request.ContentLength = ext.ContentLength()
 		}
 
 		if b, ok := r.body.(flu.Input); ok {
@@ -169,8 +165,8 @@ func (r Request) do() (*http.Response, error) {
 			r.Request.Body = body.(io.ReadCloser)
 		}
 
-		if c, ok := r.body.(ContentType); ok {
-			r.Request.Header.Set("Content-Type", c.ContentType())
+		if ext, ok := r.body.(ContentType); ok {
+			r.Request.Header.Set("Content-Type", ext.ContentType())
 		}
 	}
 
@@ -193,5 +189,5 @@ type ContentType interface {
 }
 
 type ContentLength interface {
-	ContentLength() (int64, error)
+	ContentLength() int64
 }
