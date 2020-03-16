@@ -15,11 +15,10 @@ import (
 // NewRequest allows to set basic http.NewRequest properties.
 type Request struct {
 	*http.Request
-	client        Client
-	queryParams   url.Values
-	bodyValue     interface{}
-	contentLength int64
-	err           error
+	client      Client
+	queryParams url.Values
+	bodyValue   interface{}
+	err         error
 }
 
 // AddHeader adds a request header.
