@@ -1,4 +1,4 @@
-package httpx
+package http
 
 import (
 	"crypto/rand"
@@ -13,7 +13,7 @@ import (
 type MultipartForm struct {
 	Form
 	boundary string
-	files    map[string]flu.Readable
+	files    map[string]flu.Input
 }
 
 func NewMultipartForm() MultipartForm {
@@ -52,9 +52,9 @@ func (f MultipartForm) Value(value interface{}) MultipartForm {
 	return f
 }
 
-func (f MultipartForm) File(k string, r flu.Readable) MultipartForm {
+func (f MultipartForm) File(k string, r flu.Input) MultipartForm {
 	if f.files == nil {
-		f.files = make(map[string]flu.Readable)
+		f.files = make(map[string]flu.Input)
 	}
 
 	f.files[k] = r
@@ -82,7 +82,7 @@ func (f MultipartForm) EncodeTo(w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		err = flu.Copy(r, flu.Xable{W: w})
+		err = flu.Copy(r, flu.IO{W: w})
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package httpx
+package http
 
 import (
 	"context"
@@ -8,9 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pkg/errors"
-
 	"github.com/jfk9w-go/flu"
+	"github.com/pkg/errors"
 )
 
 // NewRequest allows to set basic http.NewRequest properties.
@@ -18,7 +17,7 @@ type Request struct {
 	*http.Request
 	client Client
 	query  url.Values
-	body   flu.Body
+	body   interface{}
 	err    error
 }
 
@@ -103,14 +102,14 @@ func (r Request) QueryParam(key, value string) Request {
 	return r
 }
 
-// Body sets the request body.
-func (r Request) Body(body flu.Body) Request {
+// ContentType sets the request body.
+func (r Request) Body(body interface{}) Request {
 	if r.err != nil {
 		return r
 	}
 	switch body.(type) {
-	case flu.BodyEncoderTo:
-	case flu.Readable:
+	case flu.EncoderTo:
+	case flu.Input:
 	default:
 		panic(errors.Errorf("unrecognized body type: %T", body))
 	}
@@ -129,7 +128,10 @@ func (r Request) Context(ctx context.Context) Request {
 // Send executes the request and returns a response.
 func (r Request) Execute() Response {
 	resp, err := r.do()
-	return Response{resp, err}
+	return Response{
+		Response: resp,
+		Error:    err,
+	}
 }
 
 func (r Request) do() (*http.Response, error) {
@@ -146,7 +148,7 @@ func (r Request) do() (*http.Response, error) {
 			r.Request.ContentLength = contentLength
 		}
 
-		if b, ok := r.body.(flu.Readable); ok {
+		if b, ok := r.body.(flu.Input); ok {
 			body, err := b.Reader()
 			if err != nil {
 				return nil, err
@@ -159,7 +161,7 @@ func (r Request) do() (*http.Response, error) {
 			if sized, ok := body.(interface{ Len() int }); ok {
 				r.Request.ContentLength = int64(sized.Len())
 			}
-		} else if b, ok := r.body.(flu.BodyEncoderTo); ok {
+		} else if b, ok := r.body.(flu.EncoderTo); ok {
 			body, err := flu.ReadablePipe(b).Reader()
 			if err != nil {
 				return nil, err
@@ -167,7 +169,9 @@ func (r Request) do() (*http.Response, error) {
 			r.Request.Body = body.(io.ReadCloser)
 		}
 
-		r.Request.Header.Set("Content-Type", r.body.ContentType())
+		if c, ok := r.body.(ContentType); ok {
+			r.Request.Header.Set("Content-Type", c.ContentType())
+		}
 	}
 
 	r.Request.URL.RawQuery = r.query.Encode()
@@ -182,6 +186,10 @@ func (r Request) do() (*http.Response, error) {
 	}
 
 	return response, nil
+}
+
+type ContentType interface {
+	ContentType() string
 }
 
 type ContentLength interface {

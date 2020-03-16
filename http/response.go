@@ -1,4 +1,4 @@
-package httpx
+package http
 
 import (
 	"fmt"
@@ -12,10 +12,19 @@ import (
 // Response is a fluent response wrapper.
 type Response struct {
 	*http.Response
+	ignoreContentType bool
 
 	// Error contains an error in case of a request processing error
 	// or nil in case of success.
 	Error error
+}
+
+func (r Response) IgnoreContentType() Response {
+	if r.Error != nil {
+		return r
+	}
+	r.ignoreContentType = true
+	return r
 }
 
 type ResponseHandler interface {
@@ -47,8 +56,8 @@ func (e StatusCodeError) Error() string {
 func NewStatusCodeError(r *http.Response) StatusCodeError {
 	e := StatusCodeError{Code: r.StatusCode}
 	if r.Body != nil {
-		text := flu.PlainText("")
-		if err := flu.DecodeFrom(flu.Xable{R: r.Body}, text); err != nil {
+		text := &flu.PlainText{""}
+		if err := flu.DecodeFrom(flu.IO{R: r.Body}, text); err != nil {
 			e.Text = fmt.Sprintf("response body read error: %s", err.Error())
 		} else {
 			e.Text = text.Value
@@ -73,32 +82,26 @@ func (r Response) AcceptStatus(codes ...int) Response {
 }
 
 // Decode reads the response body.
-func (r Response) Decode(decoder flu.DecoderFrom) Response {
+func (r Response) DecodeBody(decoder flu.DecoderFrom) Response {
 	if r.Error != nil {
 		return r
 	}
-	return r.complete(flu.DecodeFrom(flu.Xable{R: r.Body}, decoder))
+	if !r.ignoreContentType {
+		if c, ok := decoder.(ContentType); ok {
+			contentType := r.Response.Header.Get("Content-Type")
+			if !strings.HasPrefix(contentType, c.ContentType()) {
+				return r.complete(ContentTypeError(c.ContentType()))
+			}
+		}
+	}
+
+	return r.complete(flu.DecodeFrom(flu.IO{R: r.Body}, decoder))
 }
 
 type ContentTypeError string
 
 func (e ContentTypeError) Error() string {
 	return fmt.Sprintf("invalid body type: %s", string(e))
-}
-
-// DecodeBody checks the response Content-Type header.
-// If there is no match, sets the error to ContentTypeError.
-// Otherwise proceeds with reading.
-func (r Response) DecodeBody(decoder flu.BodyDecoderFrom) Response {
-	if r.Error != nil {
-		return r
-	}
-	contentType := r.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, decoder.ContentType()) {
-		r.Error = ContentTypeError(contentType)
-		return r
-	}
-	return r.Decode(decoder)
 }
 
 type bodyReaderHandler struct {
@@ -127,11 +130,11 @@ func (e WritableError) Error() string {
 	return fmt.Sprintf("failed to create writer: %s", e.Err)
 }
 
-func (r Response) DecodeBodyTo(out flu.Writable) Response {
+func (r Response) DecodeBodyTo(out flu.Output) Response {
 	if r.Error != nil {
 		return r
 	}
-	return r.complete(flu.Copy(flu.Xable{R: r.Body}, out))
+	return r.complete(flu.Copy(flu.IO{R: r.Body}, out))
 }
 
 func (r Response) complete(err error) Response {

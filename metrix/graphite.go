@@ -68,6 +68,8 @@ func NewGraphiteClient(ctx context.Context, address string, interval time.Durati
 	client := GraphiteClient{
 		address: address,
 		metrics: make(map[string]GraphiteMetric),
+		work:    new(sync.WaitGroup),
+		mu:      new(sync.RWMutex),
 	}
 
 	client.work.Add(1)

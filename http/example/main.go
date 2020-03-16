@@ -7,7 +7,7 @@ import (
 	"time"
 
 	. "github.com/jfk9w-go/flu"
-	. "github.com/jfk9w-go/flu/httpx"
+	. "github.com/jfk9w-go/flu/http"
 )
 
 type Post struct {
@@ -48,7 +48,7 @@ func Example_GET() {
 	err := ExampleClient.
 		GET("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
-		DecodeBody(JSON(response)).
+		DecodeBody(JSON{response}).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -59,7 +59,7 @@ func Example_GET() {
 	// ID: 1
 	// UserID: 1
 	// Title: sunt aut facere repellat provident occaecati excepturi optio reprehenderit
-	// Body: quia et suscipit
+	// ContentType: quia et suscipit
 	// suscipit recusandae consequuntur expedita et cum
 	// reprehenderit molestiae ut ut quas totam
 	// nostrum rerum est autem sunt rem eveniet architecto
@@ -73,7 +73,7 @@ func Example_GET_QueryParams() {
 		GET("https://jsonplaceholder.typicode.com/posts").
 		QueryParam("userId", "1").
 		Execute().
-		DecodeBody(JSON(&response)).
+		DecodeBody(JSON{&response}).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -95,9 +95,9 @@ func Example_POST() {
 	response := new(Post)
 	err := ExampleClient.
 		POST("https://jsonplaceholder.typicode.com/posts").
-		Body(JSON(post)).
+		Body(JSON{post}).
 		Execute().
-		DecodeBody(JSON(response)).
+		DecodeBody(JSON{response}).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -108,7 +108,7 @@ func Example_POST() {
 	// ID: 101
 	// UserID: 10
 	// Title: lorem ipsum
-	// Body: body
+	// ContentType: body
 }
 
 // Example_PUT provides an example of performing a PUT request.
@@ -122,9 +122,9 @@ func Example_PUT() {
 	response := new(Post)
 	err := ExampleClient.
 		PUT("https://jsonplaceholder.typicode.com/posts/1").
-		Body(JSON(post)).
+		Body(JSON{post}).
 		Execute().
-		DecodeBody(JSON(response)).
+		DecodeBody(JSON{response}).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -135,7 +135,7 @@ func Example_PUT() {
 	// ID: 1
 	// UserID: 10
 	// Title: lorem ipsum
-	// Body: body
+	// ContentType: body
 }
 
 // Example_PATCH provides an example of performing a PATCH request.
@@ -149,9 +149,9 @@ func Example_PATCH() {
 	response := new(Post)
 	err := ExampleClient.
 		PATCH("https://jsonplaceholder.typicode.com/posts/1").
-		Body(JSON(post)).
+		Body(JSON{post}).
 		Execute().
-		DecodeBody(JSON(response)).
+		DecodeBody(JSON{response}).
 		Error
 	if err != nil {
 		fmt.Println(err)
@@ -162,17 +162,18 @@ func Example_PATCH() {
 	// ID: 1
 	// UserID: 10
 	// Title: lorem ipsum
-	// Body: body
+	// ContentType: body
 }
 
 // Example_DELETE provides an example of performing a DELETE request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
 func Example_DELETE() {
-	response := PlainText("")
+	response := &PlainText{""}
 	err := ExampleClient.
 		DELETE("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
-		Decode(response).
+		IgnoreContentType().
+		DecodeBody(response).
 		Error
 	if err != nil {
 		fmt.Println(err)
