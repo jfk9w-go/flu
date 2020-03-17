@@ -150,6 +150,6 @@ func (c Client) NewRequest(method string, rawurl string) Request {
 
 	request.URL = u
 	request.Header = c.header.Clone()
-	request.queryParams = u.Query()
+	request.query = u.Query()
 	return request
 }

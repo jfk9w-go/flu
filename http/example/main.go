@@ -95,7 +95,7 @@ func Example_POST() {
 	response := new(Post)
 	err := ExampleClient.
 		POST("https://jsonplaceholder.typicode.com/posts").
-		Body(JSON{post}).
+		BodyEncoder(JSON{post}).
 		Execute().
 		DecodeBody(JSON{response}).
 		Error
@@ -122,7 +122,7 @@ func Example_PUT() {
 	response := new(Post)
 	err := ExampleClient.
 		PUT("https://jsonplaceholder.typicode.com/posts/1").
-		Body(JSON{post}).
+		BodyEncoder(JSON{post}).
 		Execute().
 		DecodeBody(JSON{response}).
 		Error
@@ -149,7 +149,7 @@ func Example_PATCH() {
 	response := new(Post)
 	err := ExampleClient.
 		PATCH("https://jsonplaceholder.typicode.com/posts/1").
-		Body(JSON{post}).
+		BodyEncoder(JSON{post}).
 		Execute().
 		DecodeBody(JSON{response}).
 		Error
