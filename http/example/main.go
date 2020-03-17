@@ -22,28 +22,22 @@ func (p *Post) String() string {
 }
 
 var ExampleClient = NewTransport().
-	ResponseHeaderTimeout(1 * time.Second).
+	ResponseHeaderTimeout(1*time.Second).
 	NewClient().
-	AcceptStatus(http.StatusOK)
+	AcceptStatus(http.StatusOK, http.StatusCreated)
 
 func main() {
-	log.Printf("GET")
-	Example_GET()
-	log.Printf("GET with query parameters")
-	Example_GET_QueryParams()
-	log.Printf("POST")
-	Example_POST()
-	log.Printf("PUT")
-	Example_PUT()
-	log.Printf("PATCH")
-	Example_PATCH()
-	log.Printf("DELETE")
-	Example_DELETE()
+	exampleGet()
+	exampleGetQueryParams()
+	examplePost()
+	examplePut()
+	examplePatch()
+	exampleDelete()
 }
 
-// Example_GET provides an example of performing a GET request.
+// exampleGet provides an example of performing a GET request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
-func Example_GET() {
+func exampleGet() {
 	response := new(Post)
 	err := ExampleClient.
 		GET("https://jsonplaceholder.typicode.com/posts/1").
@@ -54,8 +48,9 @@ func Example_GET() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(response)
+	log.Printf("GET\n%s", response)
 	// Output:
+	// GET
 	// ID: 1
 	// UserID: 1
 	// Title: sunt aut facere repellat provident occaecati excepturi optio reprehenderit
@@ -65,9 +60,9 @@ func Example_GET() {
 	// nostrum rerum est autem sunt rem eveniet architecto
 }
 
-// Example_GET_QueryParams provides an example of performing a GET request with query parameters.
+// exampleGetQueryParams provides an example of performing a GET request with query parameters.
 // See https://jsonplaceholder.typicode.com/ for resource description.
-func Example_GET_QueryParams() {
+func exampleGetQueryParams() {
 	response := make([]Post, 0)
 	err := ExampleClient.
 		GET("https://jsonplaceholder.typicode.com/posts").
@@ -79,14 +74,15 @@ func Example_GET_QueryParams() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Printf("Posts count: %d\n", len(response))
+	log.Printf("GET query params\nPosts count: %d\n", len(response))
 	// Output:
+	// GET
 	// Posts count: 10
 }
 
-// Example_POST provides an example of performing a POST request.
+// examplePost provides an example of performing a POST request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
-func Example_POST() {
+func examplePost() {
 	post := &Post{
 		UserID: 10,
 		Title:  "lorem ipsum",
@@ -103,17 +99,18 @@ func Example_POST() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(response)
+	log.Printf("POST\n%s", response)
 	// Output:
+	// POST
 	// ID: 101
 	// UserID: 10
 	// Title: lorem ipsum
 	// ContentType: body
 }
 
-// Example_PUT provides an example of performing a PUT request.
+// examplePut provides an example of performing a PUT request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
-func Example_PUT() {
+func examplePut() {
 	post := &Post{
 		UserID: 10,
 		Title:  "lorem ipsum",
@@ -130,17 +127,18 @@ func Example_PUT() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(response)
+	log.Printf("PUT\n%s", response)
 	// Output:
+	// PUT
 	// ID: 1
 	// UserID: 10
 	// Title: lorem ipsum
 	// ContentType: body
 }
 
-// Example_PATCH provides an example of performing a PATCH request.
+// examplePatch provides an example of performing a PATCH request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
-func Example_PATCH() {
+func examplePatch() {
 	post := &Post{
 		UserID: 10,
 		Title:  "lorem ipsum",
@@ -157,17 +155,18 @@ func Example_PATCH() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(response)
+	log.Printf("PATCH\n%s", response)
 	// Output:
+	// PATCH
 	// ID: 1
 	// UserID: 10
 	// Title: lorem ipsum
 	// ContentType: body
 }
 
-// Example_DELETE provides an example of performing a DELETE request.
+// exampleDelete provides an example of performing a DELETE request.
 // See https://jsonplaceholder.typicode.com/ for resource description.
-func Example_DELETE() {
+func exampleDelete() {
 	response := &PlainText{""}
 	err := ExampleClient.
 		DELETE("https://jsonplaceholder.typicode.com/posts/1").
@@ -179,7 +178,8 @@ func Example_DELETE() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Printf("Response: %s\n", response.Value)
+	log.Printf("DELETE\nResponse: %s\n", response.Value)
 	// Output:
+	// DELETE
 	// Response: {}
 }

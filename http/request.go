@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,6 +19,15 @@ type Request struct {
 	query  url.Values
 	body   interface{}
 	err    error
+}
+
+func (r Request) URL(url *url.URL) Request {
+	if r.err != nil {
+		return r
+	}
+	r.Request.URL = url
+	r.query = url.Query()
+	return r
 }
 
 // AddHeader adds a request header.
@@ -137,6 +147,9 @@ func (r Request) Execute() Response {
 func (r Request) do() (*http.Response, error) {
 	if r.err != nil {
 		return nil, r.err
+	}
+	if r.Request.URL == nil {
+		return nil, errors.New("empty request url")
 	}
 	if r.body != nil {
 		if b, ok := r.body.(flu.Input); ok {

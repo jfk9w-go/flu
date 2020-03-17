@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
+	_url "net/url"
 	"time"
 )
 
@@ -68,7 +68,7 @@ func (c Client) Timeout(timeout time.Duration) Client {
 
 // SetCookies sets the http.Client cookies.
 func (c Client) SetCookies(rawurl string, cookies ...*http.Cookie) Client {
-	u, err := url.Parse(rawurl)
+	u, err := _url.Parse(rawurl)
 	if err != nil {
 		panic(err)
 	}
@@ -132,7 +132,7 @@ func (c Client) TRACE(resource string) Request {
 
 // NewRequest creates a NewRequest.
 func (c Client) NewRequest(method string, rawurl string) Request {
-	request := Request{
+	req := Request{
 		Request: &http.Request{
 			Method:     method,
 			Proto:      "HTTP/1.1",
@@ -142,14 +142,15 @@ func (c Client) NewRequest(method string, rawurl string) Request {
 		client: c,
 	}
 
-	u, err := url.Parse(rawurl)
-	if err != nil {
-		request.err = err
-		return request
+	if rawurl != "" {
+		url, err := _url.Parse(rawurl)
+		if err != nil {
+			req.err = err
+			return req
+		}
+		req = req.URL(url)
 	}
 
-	request.URL = u
-	request.Header = c.header.Clone()
-	request.query = u.Query()
-	return request
+	req.Header = c.header.Clone()
+	return req
 }
