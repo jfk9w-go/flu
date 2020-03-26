@@ -12,19 +12,10 @@ import (
 // Response is a fluent response wrapper.
 type Response struct {
 	*http.Response
-	ignoreContentType bool
 
 	// Error contains an error in case of a request processing error
 	// or nil in case of success.
 	Error error
-}
-
-func (r Response) IgnoreContentType() Response {
-	if r.Error != nil {
-		return r
-	}
-	r.ignoreContentType = true
-	return r
 }
 
 type ResponseHandler interface {
@@ -67,8 +58,8 @@ func NewStatusCodeError(r *http.Response) StatusCodeError {
 	return e
 }
 
-// AcceptStatus checks the response status code and sets the error to StatusCodeError if there is no match.
-func (r Response) AcceptStatus(codes ...int) Response {
+// CheckStatus checks the response status code and sets the error to StatusCodeError if there is no match.
+func (r Response) CheckStatus(codes ...int) Response {
 	if r.Error != nil {
 		return r
 	}
@@ -81,20 +72,22 @@ func (r Response) AcceptStatus(codes ...int) Response {
 	return r.complete(NewStatusCodeError(r.Response))
 }
 
+func (r Response) CheckContentType(value string) Response {
+	if r.Error != nil {
+		return r
+	}
+	contentType := r.Response.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, value) {
+		return r.complete(ContentTypeError(contentType))
+	}
+	return r
+}
+
 // Decode reads the response body.
 func (r Response) DecodeBody(decoder flu.DecoderFrom) Response {
 	if r.Error != nil {
 		return r
 	}
-	if !r.ignoreContentType {
-		if c, ok := decoder.(ContentType); ok {
-			contentType := r.Response.Header.Get("Content-Type")
-			if !strings.HasPrefix(contentType, c.ContentType()) {
-				return r.complete(ContentTypeError(c.ContentType()))
-			}
-		}
-	}
-
 	return r.complete(flu.DecodeFrom(flu.IO{R: r.Body}, decoder))
 }
 

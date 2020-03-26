@@ -30,61 +30,61 @@ type DecoderFrom interface {
 }
 
 func EncodeTo(encoder EncoderTo, out Output) error {
-	writer, err := out.Writer()
+	w, err := out.Writer()
 	if err != nil {
 		return err
 	}
-	if closer, ok := writer.(io.Closer); ok {
-		defer closer.Close()
+	if c, ok := w.(io.Closer); ok {
+		defer c.Close()
 	}
-	return encoder.EncodeTo(writer)
+	return encoder.EncodeTo(w)
 }
 
 func DecodeFrom(in Input, decoder DecoderFrom) error {
-	reader, err := in.Reader()
+	r, err := in.Reader()
 	if err != nil {
 		return err
 	}
-	if closer, ok := reader.(io.Closer); ok {
-		defer closer.Close()
+	if c, ok := r.(io.Closer); ok {
+		defer c.Close()
 	}
-	return decoder.DecodeFrom(reader)
+	return decoder.DecodeFrom(r)
 }
 
-func ReadablePipe(encoder EncoderTo) Input {
-	reader, writer := io.Pipe()
+func PipeInput(encoder EncoderTo) Input {
+	r, w := io.Pipe()
 	go func() {
-		err := encoder.EncodeTo(writer)
-		_ = writer.CloseWithError(err)
+		err := encoder.EncodeTo(w)
+		_ = w.CloseWithError(err)
 	}()
-	return IO{R: reader}
+	return IO{R: r}
 }
 
-func WritablePipe(decoder DecoderFrom) Output {
-	reader, writer := io.Pipe()
+func PipeOutput(decoder DecoderFrom) Output {
+	r, w := io.Pipe()
 	go func() {
-		err := decoder.DecodeFrom(reader)
-		_ = reader.CloseWithError(err)
+		err := decoder.DecodeFrom(r)
+		_ = r.CloseWithError(err)
 	}()
-	return IO{W: writer}
+	return IO{W: w}
 }
 
 func Copy(in Input, out Output) error {
-	reader, err := in.Reader()
+	r, err := in.Reader()
 	if err != nil {
 		return err
 	}
-	if closer, ok := reader.(io.Closer); ok {
-		defer closer.Close()
+	if c, ok := r.(io.Closer); ok {
+		defer c.Close()
 	}
-	writer, err := out.Writer()
+	w, err := out.Writer()
 	if err != nil {
 		return err
 	}
-	if closer, ok := writer.(io.Closer); ok {
-		defer closer.Close()
+	if c, ok := w.(io.Closer); ok {
+		defer c.Close()
 	}
-	_, err = io.Copy(writer, reader)
+	_, err = io.Copy(w, r)
 	return err
 }
 

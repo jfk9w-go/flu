@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/jfk9w-go/flu"
 )
@@ -111,6 +113,21 @@ func (r Request) QueryParam(key, value string) Request {
 	return r
 }
 
+func (r Request) ContentType(contentType string) Request {
+	if r.err != nil {
+		return r
+	}
+	return r.SetHeader("Content-Type", contentType)
+}
+
+func (r Request) ContentLength(contentLength int64) Request {
+	if r.err != nil {
+		return r
+	}
+	r.Request.ContentLength = contentLength
+	return r
+}
+
 func (r Request) BodyEncoder(encoder flu.EncoderTo) Request {
 	if r.err != nil {
 		return r
@@ -135,7 +152,7 @@ func (r Request) Context(ctx context.Context) Request {
 	return r
 }
 
-// Send executes the request and returns a response.
+// Execute executes the request and returns a response.
 func (r Request) Execute() Response {
 	resp, err := r.do()
 	return Response{
@@ -162,15 +179,24 @@ func (r Request) do() (*http.Response, error) {
 			} else {
 				r.Request.Body = ioutil.NopCloser(body)
 			}
-			if sized, ok := body.(interface{ Len() int }); ok {
-				r.Request.ContentLength = int64(sized.Len())
+			if r.Request.ContentLength <= 0 {
+				switch b := body.(type) {
+				case *bytes.Buffer:
+					r.Request.ContentLength = int64(b.Len())
+				case *bytes.Reader:
+					r.Request.ContentLength = int64(b.Len())
+				case *strings.Reader:
+					r.Request.ContentLength = int64(b.Len())
+				}
 			}
 		} else if b, ok := r.body.(flu.EncoderTo); ok {
-			body, err := flu.ReadablePipe(b).Reader()
+			body, err := flu.PipeInput(b).Reader()
 			if err != nil {
 				return nil, err
 			}
 			r.Request.Body = body.(io.ReadCloser)
+		} else {
+			panic(fmt.Errorf("invalid body type: %T", r.body))
 		}
 		if ext, ok := r.body.(ContentType); ok {
 			r.Request.Header.Set("Content-Type", ext.ContentType())

@@ -22,7 +22,7 @@ func (p *Post) String() string {
 }
 
 var ExampleClient = NewTransport().
-	ResponseHeaderTimeout(1*time.Second).
+	ResponseHeaderTimeout(10*time.Second).
 	NewClient().
 	AcceptStatus(http.StatusOK, http.StatusCreated)
 
@@ -171,7 +171,6 @@ func exampleDelete() {
 	err := ExampleClient.
 		DELETE("https://jsonplaceholder.typicode.com/posts/1").
 		Execute().
-		IgnoreContentType().
 		DecodeBody(response).
 		Error
 	if err != nil {

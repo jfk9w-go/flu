@@ -56,7 +56,6 @@ func (f MultipartForm) File(k string, r flu.Input) MultipartForm {
 	if f.files == nil {
 		f.files = make(map[string]flu.Input)
 	}
-
 	f.files[k] = r
 	return f
 }
