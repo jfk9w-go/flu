@@ -77,7 +77,7 @@ func (f MultipartForm) EncodeTo(w io.Writer) error {
 		return err
 	}
 	for k, r := range f.files {
-		w, err := mw.CreateFormFile(k, k)
+		w, err := mw.CreateFormFile(k, "gif.gif")
 		if err != nil {
 			return err
 		}
