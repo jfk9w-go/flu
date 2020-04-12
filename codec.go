@@ -5,6 +5,8 @@ import (
 	"encoding/xml"
 	"io"
 	"io/ioutil"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 type JSON struct {
@@ -58,5 +60,19 @@ func (t *PlainText) DecodeFrom(r io.Reader) error {
 }
 
 func (t *PlainText) ContentType() string {
-	return "text/plain"
+	return "text/plain; charset=utf-8"
+}
+
+type YAML struct {
+	Value interface{}
+}
+
+func (y YAML) EncodeTo(w io.Writer) error {
+	enc := yaml.NewEncoder(w)
+	defer enc.Close()
+	return enc.Encode(y.Value)
+}
+
+func (y YAML) DecodeFrom(r io.Reader) error {
+	return yaml.NewDecoder(r).Decode(y.Value)
 }
