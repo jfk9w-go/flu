@@ -20,13 +20,9 @@ type Request struct {
 	client Client
 	query  url.Values
 	body   interface{}
-	err    error
 }
 
 func (r Request) URL(url *url.URL) Request {
-	if r.err != nil {
-		return r
-	}
 	r.Request.URL = url
 	r.query = url.Query()
 	return r
@@ -34,18 +30,12 @@ func (r Request) URL(url *url.URL) Request {
 
 // AddHeader adds a request header.
 func (r Request) AddHeader(key, value string) Request {
-	if r.err != nil {
-		return r
-	}
 	r.Header.Add(key, value)
 	return r
 }
 
 // SetHeader sets a request header.
 func (r Request) SetHeader(key, value string) Request {
-	if r.err != nil {
-		return r
-	}
 	r.Header.Set(key, value)
 	return r
 }
@@ -71,9 +61,6 @@ func keyValuePairsLength(kvPairs []string) int {
 // AddHeaders adds request header.
 // kvPairs is an array of key-value pairs and must have even length.
 func (r Request) AddHeaders(kvPairs ...string) Request {
-	if r.err != nil {
-		return r
-	}
 	kvLength := keyValuePairsLength(kvPairs)
 	for i := 0; i < kvLength; i += 2 {
 		k, v := kvPairs[i], kvPairs[i+1]
@@ -85,9 +72,6 @@ func (r Request) AddHeaders(kvPairs ...string) Request {
 // SetHeaders sets request header.
 // kvPairs is an array of key-value pairs and must have even length.
 func (r Request) SetHeaders(kvPairs ...string) Request {
-	if r.err != nil {
-		return r
-	}
 	kvLength := keyValuePairsLength(kvPairs)
 	for i := 0; i < kvLength; i += 2 {
 		k, v := kvPairs[i], kvPairs[i+1]
@@ -97,57 +81,36 @@ func (r Request) SetHeaders(kvPairs ...string) Request {
 }
 
 func (r Request) Auth(auth Authorization) Request {
-	if r.err != nil {
-		return r
-	}
 	auth.SetAuth(r.Request)
 	return r
 }
 
 // QueryParam sets a query parameter.
 func (r Request) QueryParam(key, value string) Request {
-	if r.err != nil {
-		return r
-	}
 	r.query.Set(key, value)
 	return r
 }
 
 func (r Request) ContentType(contentType string) Request {
-	if r.err != nil {
-		return r
-	}
 	return r.SetHeader("Content-Type", contentType)
 }
 
 func (r Request) ContentLength(contentLength int64) Request {
-	if r.err != nil {
-		return r
-	}
 	r.Request.ContentLength = contentLength
 	return r
 }
 
 func (r Request) BodyEncoder(encoder flu.EncoderTo) Request {
-	if r.err != nil {
-		return r
-	}
 	r.body = encoder
 	return r
 }
 
 func (r Request) BodyInput(input flu.Input) Request {
-	if r.err != nil {
-		return r
-	}
 	r.body = input
 	return r
 }
 
 func (r Request) Context(ctx context.Context) Request {
-	if r.err != nil {
-		return r
-	}
 	r.Request = r.Request.WithContext(ctx)
 	return r
 }
@@ -162,9 +125,6 @@ func (r Request) Execute() Response {
 }
 
 func (r Request) do() (*http.Response, error) {
-	if r.err != nil {
-		return nil, r.err
-	}
 	if r.Request.URL == nil {
 		return nil, errors.New("empty request url")
 	}
