@@ -57,39 +57,39 @@ func (g DummyGauge) Sub(delta float64) {
 }
 
 type DummyClient struct {
-	prefix string
-	log    bool
+	Prefix string
+	Log    bool
 }
 
 func (d DummyClient) WithPrefix(prefix string) Client {
-	if d.prefix != "" {
-		d.prefix += "."
+	if d.Prefix != "" {
+		d.Prefix += "."
 	}
 
-	d.prefix += prefix
+	d.Prefix += prefix
 	return d
 }
 
 func (d DummyClient) Counter(name string, labels Labels) Counter {
-	if d.prefix != "" {
-		d.prefix += "."
+	if d.Prefix != "" {
+		d.Prefix += "."
 	}
 
 	return DummyCounter{
-		Name:   d.prefix + name,
+		Name:   d.Prefix + name,
 		Labels: labels,
-		Log:    d.log,
+		Log:    d.Log,
 	}
 }
 
 func (d DummyClient) Gauge(name string, labels Labels) Gauge {
-	if d.prefix != "" {
-		d.prefix += "."
+	if d.Prefix != "" {
+		d.Prefix += "."
 	}
 
 	return DummyGauge{
-		Name:   d.prefix + name,
+		Name:   d.Prefix + name,
 		Labels: labels,
-		Log:    d.log,
+		Log:    d.Log,
 	}
 }

@@ -18,6 +18,7 @@ var (
 type Client struct {
 	*http.Client
 	header   http.Header
+	auth     Authorization
 	statuses map[int]bool
 }
 
@@ -94,6 +95,11 @@ func (c Client) AcceptStatus(codes ...int) Client {
 	return c
 }
 
+func (c Client) Auth(auth Authorization) Client {
+	c.auth = auth
+	return c
+}
+
 func (c Client) GET(resource string) Request {
 	return c.NewRequest(http.MethodGet, resource)
 }
@@ -149,6 +155,9 @@ func (c Client) NewRequest(method string, rawurl string) Request {
 			return req
 		}
 		req = req.URL(url)
+		if c.auth != nil {
+			c.auth.SetAuth(req.Request)
+		}
 	}
 
 	req.Header = c.header.Clone()
