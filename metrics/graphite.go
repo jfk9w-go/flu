@@ -129,6 +129,7 @@ func (g GraphiteClient) FlushValues(now time.Time) error {
 		b.WriteString(nowstr)
 		b.WriteRune('\n')
 	}
+
 	g.mu.RUnlock()
 	if b.Len() == 0 {
 		return nil
