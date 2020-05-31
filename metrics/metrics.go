@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Client interface {
-	WithPrefix(prefix string) Client
+type Registry interface {
+	WithPrefix(prefix string) Registry
 	Counter(name string, labels Labels) Counter
 	Gauge(name string, labels Labels) Gauge
 }

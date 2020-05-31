@@ -148,7 +148,7 @@ func (g GraphiteClient) Flush(now time.Time) error {
 	return nil
 }
 
-func (g GraphiteClient) WithPrefix(prefix string) Client {
+func (g GraphiteClient) WithPrefix(prefix string) Registry {
 	if g.prefix != "" {
 		g.prefix += "."
 	}

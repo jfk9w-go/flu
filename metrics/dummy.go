@@ -61,7 +61,7 @@ type DummyClient struct {
 	Log    bool
 }
 
-func (d DummyClient) WithPrefix(prefix string) Client {
+func (d DummyClient) WithPrefix(prefix string) Registry {
 	if d.Prefix != "" {
 		d.Prefix += "."
 	}
