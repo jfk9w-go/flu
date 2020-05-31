@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jfk9w-go/flu"
 	"github.com/pkg/errors"
 )
 
@@ -138,8 +139,7 @@ func (g GraphiteClient) FlushValues(now time.Time) error {
 		return errors.Wrap(err, "connect")
 	}
 
-	defer conn.Close()
-	_, err = conn.Write([]byte(b.String()))
+	err = flu.EncodeTo(&flu.PlainText{b.String()}, flu.IO{W: conn})
 	if err != nil {
 		return errors.Wrap(err, "write")
 	}
