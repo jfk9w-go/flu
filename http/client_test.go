@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -131,10 +132,9 @@ func TestClient_POST_Form(t *testing.T) {
 		RequestHandler: func(req *http.Request) {
 			assert.Equal(t, http.MethodPost, req.Method, "handler 1 method")
 			assert.Equal(t, "application/x-www-form-urlencoded", req.Header.Get("Content-Type"), "handler 1 content type")
-			body := new(flu.PlainText)
-			err := flu.DecodeFrom(flu.IO{R: req.Body}, body)
-			assert.Nil(t, err, "handler 1 decode error")
-			assert.Equal(t, "id=1&name=Test+Post&option=check", body.Value, "handler 1 body")
+			err := req.ParseForm()
+			assert.Nil(t, err, "handler 1 parse form")
+			assert.Equal(t, url.Values{"id": {"1"}, "name": {"Test Post"}, "option": {"check"}}, req.Form, "handler 1 form")
 		},
 		StatusCode: http.StatusCreated,
 	})
