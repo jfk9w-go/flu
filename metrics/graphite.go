@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type GraphiteMetric interface {
@@ -60,48 +62,57 @@ type GraphiteClient struct {
 	address string
 	prefix  string
 	metrics map[string]GraphiteMetric
-	work    *sync.WaitGroup
 	mu      *sync.RWMutex
+	cancel  func()
+	work    *sync.WaitGroup
 }
 
 func NewGraphiteClient(ctx context.Context, address string, interval time.Duration) GraphiteClient {
+	ctx, cancel := context.WithCancel(ctx)
 	client := GraphiteClient{
 		address: address,
 		metrics: make(map[string]GraphiteMetric),
-		work:    new(sync.WaitGroup),
 		mu:      new(sync.RWMutex),
+		cancel:  cancel,
+		work:    new(sync.WaitGroup),
 	}
 
-	client.work.Add(1)
-	go func() {
-		timer := time.NewTimer(interval)
-		defer func() {
-			timer.Stop()
-			client.FlushValues(time.Now())
-			client.work.Done()
-		}()
+	if interval > 0 {
+		client.work.Add(1)
+		go func() {
+			timer := time.NewTimer(interval)
+			defer func() {
+				timer.Stop()
+				if err := client.FlushValues(time.Now()); err != nil {
+					log.Printf("Failed to flush Graphite metrics: %s", err)
+				}
+				client.work.Done()
+			}()
 
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case now := <-timer.C:
-				client.FlushValues(now)
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case now := <-timer.C:
+					if err := client.FlushValues(now); err != nil {
+						log.Printf("Failed to flush Graphite metrics: %s", err)
+					}
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return client
 }
 
-func (g GraphiteClient) Shutdown(cancel context.CancelFunc) {
-	cancel()
+func (g GraphiteClient) Close() {
+	g.cancel()
 	g.work.Wait()
 }
 
-func (g GraphiteClient) FlushValues(now time.Time) {
+func (g GraphiteClient) FlushValues(now time.Time) error {
 	b := new(strings.Builder)
-	nowstr := strconv.FormatInt(now.UnixNano()/1e6, 10)
+	nowstr := strconv.FormatInt(now.Unix(), 10)
 
 	g.mu.RLock()
 	for key, metric := range g.metrics {
@@ -119,20 +130,21 @@ func (g GraphiteClient) FlushValues(now time.Time) {
 	}
 	g.mu.RUnlock()
 	if b.Len() == 0 {
-		return
+		return nil
 	}
 
 	conn, err := net.Dial("tcp", g.address)
 	if err != nil {
-		log.Printf("Failed to connect to graphite on %s: %s", g.address, err)
-		return
+		return errors.Wrap(err, "connect")
 	}
 
+	defer conn.Close()
 	_, err = conn.Write([]byte(b.String()))
-	_ = conn.Close()
 	if err != nil {
-		log.Printf("Failed to write data to graphite on %s: %s", g.address, err)
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func (g GraphiteClient) WithPrefix(prefix string) Client {
@@ -155,7 +167,7 @@ func (g GraphiteClient) Counter(name string, labels Labels) Counter {
 		g.mu.Lock()
 		entry, ok = g.metrics[key]
 		if !ok {
-			entry := new(GraphiteCounter)
+			entry = new(GraphiteCounter)
 			g.metrics[key] = entry
 		}
 		g.mu.Unlock()
@@ -175,7 +187,7 @@ func (g GraphiteClient) Gauge(name string, labels Labels) Gauge {
 		g.mu.Lock()
 		entry, ok = g.metrics[key]
 		if !ok {
-			entry := new(GraphiteGauge)
+			entry = new(GraphiteGauge)
 			g.metrics[key] = entry
 		}
 		g.mu.Unlock()
@@ -190,7 +202,7 @@ func (g GraphiteClient) makeKey(name string, labels Labels) string {
 		prefix += "."
 	}
 
-	values := labels.Values(".", "_")
+	values := labels.Path(".", "_")
 	prefix += values
 	if values != "" {
 		prefix += "."

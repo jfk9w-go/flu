@@ -1,8 +1,9 @@
 package metrics
 
 import (
-	"sort"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type Client interface {
@@ -24,30 +25,46 @@ type Gauge interface {
 	Sub(delta float64)
 }
 
-type Labels map[string]string
+type Labels []string
 
-func (labels Labels) Keys() []string {
-	keys := make([]string, len(labels))
-	i := 0
-	for key := range labels {
-		keys[i] = key
-		i++
+func (l Labels) checkLength() {
+	if len(l)%2 != 0 {
+		panic(errors.Errorf("invalid Labels length: %d", len(l)))
 	}
+}
 
+func (l Labels) Keys() []string {
+	if l == nil {
+		return nil
+	}
+	l.checkLength()
+	keys := make([]string, len(l)/2)
+	for i := 0; i < len(l)/2; i++ {
+		keys[i] = l[2*i]
+	}
 	return keys
 }
 
-func (labels Labels) Values(sep, esc string) string {
-	if labels == nil {
+func (l Labels) Path(sep, esc string) string {
+	if l == nil {
 		return ""
 	}
-
-	keys := labels.Keys()
-	sort.Strings(keys)
-	values := make([]string, len(keys))
-	for i, key := range keys {
-		values[i] = strings.Replace(labels[key], sep, esc, -1)
+	l.checkLength()
+	values := make([]string, len(l)/2)
+	for i := 0; i < len(l)/2; i++ {
+		values[i] = strings.Replace(l[2*i+1], sep, esc, -1)
 	}
-
 	return strings.Join(values, ".")
+}
+
+func (l Labels) Map() map[string]string {
+	if l == nil {
+		return nil
+	}
+	l.checkLength()
+	m := make(map[string]string, len(l)/2)
+	for i := 0; i < len(l)/2; i++ {
+		m[l[2*i]] = l[2*i+1]
+	}
+	return m
 }

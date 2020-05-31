@@ -67,7 +67,7 @@ func (p PrometheusClient) Counter(name string, labels Labels) Counter {
 	}
 
 	if labels != nil {
-		entry = entry.(*prometheus.CounterVec).With(prometheus.Labels(labels))
+		entry = entry.(*prometheus.CounterVec).With(labels.Map())
 	}
 
 	return entry.(Counter)
@@ -103,7 +103,7 @@ func (p PrometheusClient) Gauge(name string, labels Labels) Gauge {
 	}
 
 	if labels != nil {
-		entry = entry.(*prometheus.GaugeVec).With(prometheus.Labels(labels))
+		entry = entry.(*prometheus.GaugeVec).With(labels.Map())
 	}
 
 	return entry.(Gauge)
