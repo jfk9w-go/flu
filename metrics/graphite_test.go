@@ -2,6 +2,8 @@ package metrics_test
 
 import (
 	"context"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,7 +94,15 @@ func TestGraphiteClient_Gauge(t *testing.T) {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
-	assert.Equal(t, "gauge 1.000000000 600\nA.B.gauge 5.000000000 600\n", <-mock.In)
+	expected := []string{
+		"",
+		"A.B.gauge 5.000000000 600",
+		"gauge 1.000000000 600",
+	}
+
+	actual := strings.Split(<-mock.In, "\n")
+	sort.Strings(actual)
+	assert.Equal(t, expected, actual)
 
 	client.WithPrefix("gauge").
 		Gauge("hits", metrics.Labels{"label_a", "A", "label_b", "B"}).Set(5)
@@ -100,5 +110,14 @@ func TestGraphiteClient_Gauge(t *testing.T) {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
-	assert.Equal(t, "A.B.gauge 5.000000000 600\ngauge.A.B.hits 5.000000000 600\ngauge 1.000000000 600\n", <-mock.In)
+	expected = []string{
+		"",
+		"A.B.gauge 5.000000000 600",
+		"gauge 1.000000000 600",
+		"gauge.A.B.hits 5.000000000 600",
+	}
+
+	actual = strings.Split(<-mock.In, "\n")
+	sort.Strings(actual)
+	assert.Equal(t, expected, actual)
 }
