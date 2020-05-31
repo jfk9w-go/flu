@@ -24,26 +24,26 @@ func TestGraphiteClient_Counter(t *testing.T) {
 	defer client.Close()
 
 	client.Counter("counter", nil).Add(1)
-	if err := client.FlushValues(time.Unix(500, 0)); err != nil {
+	if err := client.Flush(time.Unix(500, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
 	assert.Equal(t, "counter 1.000000000 500\n", <-mock.In)
 
-	if err := client.FlushValues(time.Unix(550, 0)); err != nil {
+	if err := client.Flush(time.Unix(550, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
 	client.Counter("counter", nil).Add(5)
 	client.Counter("counter", nil).Add(1)
-	if err := client.FlushValues(time.Unix(600, 0)); err != nil {
+	if err := client.Flush(time.Unix(600, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
 	assert.Equal(t, "counter 6.000000000 600\n", <-mock.In)
 
 	client.Counter("counter", metrics.Labels{"label_a", "A", "label_b", "B"}).Add(5)
-	if err := client.FlushValues(time.Unix(600, 0)); err != nil {
+	if err := client.Flush(time.Unix(600, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
@@ -51,7 +51,7 @@ func TestGraphiteClient_Counter(t *testing.T) {
 
 	client.WithPrefix("counter").
 		Counter("hits", metrics.Labels{"label_a", "A", "label_b", "B"}).Add(5)
-	if err := client.FlushValues(time.Unix(600, 0)); err != nil {
+	if err := client.Flush(time.Unix(600, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
@@ -69,13 +69,13 @@ func TestGraphiteClient_Gauge(t *testing.T) {
 	defer client.Close()
 
 	client.Gauge("gauge", nil).Set(1)
-	if err := client.FlushValues(time.Unix(500, 0)); err != nil {
+	if err := client.Flush(time.Unix(500, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
 	assert.Equal(t, "gauge 1.000000000 500\n", <-mock.In)
 
-	if err := client.FlushValues(time.Unix(550, 0)); err != nil {
+	if err := client.Flush(time.Unix(550, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
@@ -83,14 +83,14 @@ func TestGraphiteClient_Gauge(t *testing.T) {
 
 	client.Gauge("gauge", nil).Set(5)
 	client.Gauge("gauge", nil).Set(1)
-	if err := client.FlushValues(time.Unix(600, 0)); err != nil {
+	if err := client.Flush(time.Unix(600, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
 	assert.Equal(t, "gauge 1.000000000 600\n", <-mock.In)
 
 	client.Gauge("gauge", metrics.Labels{"label_a", "A", "label_b", "B"}).Set(5)
-	if err := client.FlushValues(time.Unix(600, 0)); err != nil {
+	if err := client.Flush(time.Unix(600, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 
@@ -106,7 +106,7 @@ func TestGraphiteClient_Gauge(t *testing.T) {
 
 	client.WithPrefix("gauge").
 		Gauge("hits", metrics.Labels{"label_a", "A", "label_b", "B"}).Set(5)
-	if err := client.FlushValues(time.Unix(600, 0)); err != nil {
+	if err := client.Flush(time.Unix(600, 0)); err != nil {
 		t.Fatal(errors.Wrap(err, "flush metrics"))
 	}
 

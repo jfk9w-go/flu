@@ -50,11 +50,19 @@ func (l Labels) Path(sep, esc string) string {
 		return ""
 	}
 	l.checkLength()
-	values := make([]string, len(l)/2)
+	b := new(strings.Builder)
+	first := true
 	for i := 0; i < len(l)/2; i++ {
-		values[i] = strings.Replace(l[2*i+1], sep, esc, -1)
+		if first {
+			first = false
+		} else {
+			b.WriteRune('.')
+		}
+
+		b.WriteString(strings.Replace(l[2*i+1], sep, esc, -1))
 	}
-	return strings.Join(values, ".")
+
+	return b.String()
 }
 
 func (l Labels) Map() map[string]string {

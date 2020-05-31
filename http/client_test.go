@@ -21,6 +21,7 @@ func TestClient_GET_Basic(t *testing.T) {
 	}))
 
 	defer server.Close()
+
 	text := new(flu.PlainText)
 	err := fluhttp.NewClient(nil).
 		GET(server.URL+"/test/path").
@@ -43,10 +44,12 @@ func TestClient_GET_ResponseJSON(t *testing.T) {
 	})
 
 	defer server.Close()
-	status := new(struct {
-		Status string `json:"status"`
-	})
 
+	type StatusResponse struct {
+		Status string `json:"status"`
+	}
+
+	status := new(StatusResponse)
 	err := fluhttp.NewClient(nil).
 		GET(server.URL).
 		Execute().
@@ -99,6 +102,8 @@ func TestClient_POST_JSON(t *testing.T) {
 		Response:   `{"id": 1}"`,
 	})
 
+	defer server.Close()
+
 	request := Post{
 		ID:   1,
 		Name: "Test Post",
@@ -111,8 +116,6 @@ func TestClient_POST_JSON(t *testing.T) {
 		Error
 	assert.Nil(t, err, "client 1 error")
 	assert.Equal(t, &Post{ID: 1}, response, "client 1 response")
-
-	server.Close()
 }
 
 func TestClient_POST_Form(t *testing.T) {
@@ -136,6 +139,8 @@ func TestClient_POST_Form(t *testing.T) {
 		StatusCode: http.StatusCreated,
 	})
 
+	defer server.Close()
+
 	err := client.POST(server.URL).
 		BodyEncoder(fluhttp.Form{}.
 			Value(Post{
@@ -146,8 +151,6 @@ func TestClient_POST_Form(t *testing.T) {
 		Execute().
 		Error
 	assert.Nil(t, err, "client 1 error")
-
-	server.Close()
 }
 
 func TestClient_POST_MultipartFormData(t *testing.T) {

@@ -84,7 +84,7 @@ func NewGraphiteClient(ctx context.Context, address string, interval time.Durati
 			timer := time.NewTimer(interval)
 			defer func() {
 				timer.Stop()
-				if err := client.FlushValues(time.Now()); err != nil {
+				if err := client.Flush(time.Now()); err != nil {
 					log.Printf("Failed to flush Graphite metrics: %s", err)
 				}
 				client.work.Done()
@@ -95,7 +95,7 @@ func NewGraphiteClient(ctx context.Context, address string, interval time.Durati
 				case <-ctx.Done():
 					return
 				case now := <-timer.C:
-					if err := client.FlushValues(now); err != nil {
+					if err := client.Flush(now); err != nil {
 						log.Printf("Failed to flush Graphite metrics: %s", err)
 					}
 				}
@@ -111,7 +111,7 @@ func (g GraphiteClient) Close() {
 	g.work.Wait()
 }
 
-func (g GraphiteClient) FlushValues(now time.Time) error {
+func (g GraphiteClient) Flush(now time.Time) error {
 	b := new(strings.Builder)
 	nowstr := strconv.FormatInt(now.Unix(), 10)
 
