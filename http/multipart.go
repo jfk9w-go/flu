@@ -11,48 +11,49 @@ import (
 )
 
 type MultipartForm struct {
-	Form
+	*Form
 	boundary string
 	files    map[string]multipartFile
 }
 
-func NewMultipartForm() MultipartForm {
-	return MultipartForm{
+func NewMultipartForm() *MultipartForm {
+	return &MultipartForm{
+		Form:     new(Form),
 		boundary: randomBoundary(),
 	}
 }
 
-func (mf MultipartForm) Set(key, value string) MultipartForm {
+func (mf *MultipartForm) Set(key, value string) *MultipartForm {
 	mf.Form = mf.Form.Set(key, value)
 	return mf
 }
 
-func (mf MultipartForm) Add(key, value string) MultipartForm {
+func (mf *MultipartForm) Add(key, value string) *MultipartForm {
 	mf.Form = mf.Form.Add(key, value)
 	return mf
 }
 
-func (mf MultipartForm) AddAll(keys string, values ...string) MultipartForm {
+func (mf *MultipartForm) AddAll(keys string, values ...string) *MultipartForm {
 	mf.Form = mf.Form.AddAll(keys, values...)
 	return mf
 }
 
-func (mf MultipartForm) SetValues(values url.Values) MultipartForm {
+func (mf *MultipartForm) SetValues(values url.Values) *MultipartForm {
 	mf.Form = mf.Form.SetValues(values)
 	return mf
 }
 
-func (mf MultipartForm) AddValues(values url.Values) MultipartForm {
+func (mf *MultipartForm) AddValues(values url.Values) *MultipartForm {
 	mf.Form = mf.Form.AddValues(values)
 	return mf
 }
 
-func (mf MultipartForm) Value(value interface{}) MultipartForm {
+func (mf *MultipartForm) Value(value interface{}) *MultipartForm {
 	mf.Form = mf.Form.Value(value)
 	return mf
 }
 
-func (mf MultipartForm) File(fieldname, filename string, input flu.Input) MultipartForm {
+func (mf *MultipartForm) File(fieldname, filename string, input flu.Input) *MultipartForm {
 	if mf.files == nil {
 		mf.files = make(map[string]multipartFile)
 	}
@@ -75,7 +76,7 @@ func randomBoundary() string {
 	return fmt.Sprintf("%x", buf[:])
 }
 
-func (mf MultipartForm) EncodeTo(w io.Writer) error {
+func (mf *MultipartForm) EncodeTo(w io.Writer) error {
 	mw := multipart.NewWriter(w)
 	defer mw.Close()
 	err := mw.SetBoundary(mf.boundary)
@@ -115,7 +116,7 @@ func writeMultipartValues(mw *multipart.Writer, uv url.Values) error {
 	return nil
 }
 
-func (mf MultipartForm) ContentType() string {
+func (mf *MultipartForm) ContentType() string {
 	return "multipart/form-data; boundary=" + mf.boundary
 }
 

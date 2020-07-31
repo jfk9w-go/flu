@@ -15,8 +15,8 @@ type Form struct {
 	values url.Values
 }
 
-func (form Form) EncodeTo(writer io.Writer) error {
-	values, err := form.encodeValue()
+func (f *Form) EncodeTo(writer io.Writer) error {
+	values, err := f.encodeValue()
 	if err != nil {
 		return err
 	}
@@ -24,51 +24,51 @@ func (form Form) EncodeTo(writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if len(form.values) > 0 && len(values) > 0 {
+	if len(f.values) > 0 && len(values) > 0 {
 		_, err = io.WriteString(writer, "&")
 		if err != nil {
 			return err
 		}
 	}
-	_, err = io.WriteString(writer, form.values.Encode())
+	_, err = io.WriteString(writer, f.values.Encode())
 	return err
 }
 
-func (Form) ContentType() string {
+func (*Form) ContentType() string {
 	return "application/x-www-form-urlencoded"
 }
 
-func (form Form) Set(key, value string) Form {
-	if form.values == nil {
-		form.values = make(url.Values)
+func (f *Form) Set(key, value string) *Form {
+	if f.values == nil {
+		f.values = make(url.Values)
 	}
 
-	form.values.Set(key, value)
-	return form
+	f.values.Set(key, value)
+	return f
 }
 
-func (form Form) Add(key, value string) Form {
-	if form.values == nil {
-		form.values = make(url.Values)
+func (f *Form) Add(key, value string) *Form {
+	if f.values == nil {
+		f.values = make(url.Values)
 	}
 
-	form.values.Add(key, value)
-	return form
+	f.values.Add(key, value)
+	return f
 }
 
-func (form Form) AddAll(key string, values ...string) Form {
+func (f *Form) AddAll(key string, values ...string) *Form {
 	for _, v := range values {
-		form.Add(key, v)
+		f.Add(key, v)
 	}
 
-	return form
+	return f
 }
 
-func (form Form) SetValues(values url.Values) Form {
-	if form.values == nil {
-		form.values = values
+func (f *Form) SetValues(values url.Values) *Form {
+	if f.values == nil {
+		f.values = values
 	} else {
-		a, b := form.values, values
+		a, b := f.values, values
 		if len(b) < len(a) {
 			a, b = b, a
 		}
@@ -77,14 +77,14 @@ func (form Form) SetValues(values url.Values) Form {
 		}
 	}
 
-	return form
+	return f
 }
 
-func (form Form) AddValues(values url.Values) Form {
-	if form.values == nil {
-		form.values = values
+func (f *Form) AddValues(values url.Values) *Form {
+	if f.values == nil {
+		f.values = values
 	} else {
-		a, b := form.values, values
+		a, b := f.values, values
 		if len(b) < len(a) {
 			a, b = b, a
 		}
@@ -93,26 +93,26 @@ func (form Form) AddValues(values url.Values) Form {
 		}
 	}
 
-	return form
+	return f
 }
 
-func (form Form) Value(value interface{}) Form {
-	form.value = value
-	return form
+func (f *Form) Value(value interface{}) *Form {
+	f.value = value
+	return f
 }
 
-func (form Form) Multipart() MultipartForm {
+func (f *Form) Multipart() *MultipartForm {
 	multipart := NewMultipartForm()
-	multipart.Form = form
+	multipart.Form = f
 	return multipart
 }
 
-func (form Form) encodeValue() (url.Values, error) {
-	values, err := query.Values(form.value)
+func (f *Form) encodeValue() (url.Values, error) {
+	values, err := query.Values(f.value)
 	if err != nil {
 		return nil, err
 	}
-	for k := range form.values {
+	for k := range f.values {
 		values.Del(k)
 	}
 	return values, nil

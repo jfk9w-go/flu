@@ -142,7 +142,7 @@ func TestClient_POST_Form(t *testing.T) {
 	defer server.Close()
 
 	err := client.POST(server.URL).
-		BodyEncoder(fluhttp.Form{}.
+		BodyEncoder(new(fluhttp.Form).
 			Value(Post{
 				ID:   1,
 				Name: "Test Post",
