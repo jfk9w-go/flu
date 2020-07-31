@@ -24,7 +24,7 @@ func TestClient_GET_Basic(t *testing.T) {
 	defer server.Close()
 
 	text := new(flu.PlainText)
-	err := fluhttp.NewClient(nil).
+	err := fluhttp.NewTransport().NewClient().
 		GET(server.URL+"/test/path").
 		QueryParam("a", "1").
 		QueryParam("b", "2").

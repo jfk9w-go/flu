@@ -19,8 +19,8 @@ type Transport struct {
 
 // NewTransport initializes a new Transport with default settings.
 // This should be equivalent to http.DefaultTransport
-func NewTransport() Transport {
-	return Transport{
+func NewTransport() *Transport {
+	return &Transport{
 		Transport:   http.DefaultTransport.(*http.Transport).Clone(),
 		rateLimiter: flu.RateUnlimiter,
 	}
