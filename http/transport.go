@@ -27,12 +27,12 @@ func NewTransport() Transport {
 }
 
 // Proxy sets the http.Transport.Proxy.
-func (t Transport) Proxy(proxy func(*http.Request) (*url.URL, error)) Transport {
+func (t *Transport) Proxy(proxy func(*http.Request) (*url.URL, error)) *Transport {
 	t.Transport.Proxy = proxy
 	return t
 }
 
-func (t Transport) ProxyURL(rawurl string) Transport {
+func (t *Transport) ProxyURL(rawurl string) *Transport {
 	if rawurl == "" {
 		return t.Proxy(nil)
 	}
@@ -44,64 +44,64 @@ func (t Transport) ProxyURL(rawurl string) Transport {
 }
 
 // DialContext sets http.Transport.DialContext.
-func (t Transport) DialContext(fun func(ctx context.Context, network, addr string) (net.Conn, error)) Transport {
+func (t *Transport) DialContext(fun func(ctx context.Context, network, addr string) (net.Conn, error)) *Transport {
 	t.Transport.DialContext = fun
 	return t
 }
 
 // MaxIdleConns sets http.Transport.MaxIdleConns.
-func (t Transport) MaxIdleConns(value int) Transport {
+func (t *Transport) MaxIdleConns(value int) *Transport {
 	t.Transport.MaxIdleConns = value
 	return t
 }
 
 // MaxIdleConnsPerHost sets http.Transport.MaxIdleConnsPerHost.
-func (t Transport) MaxIdleConnsPerHost(value int) Transport {
+func (t *Transport) MaxIdleConnsPerHost(value int) *Transport {
 	t.Transport.MaxConnsPerHost = value
 	return t
 }
 
 // MaxConnsPerHost sets http.Transport.MaxConnsPerHost.
-func (t Transport) MaxConnsPerHost(value int) Transport {
+func (t *Transport) MaxConnsPerHost(value int) *Transport {
 	t.Transport.MaxConnsPerHost = value
 	return t
 }
 
 // IdleConnTimeout sets http.Transport.IdleConnTimeout.
-func (t Transport) IdleConnTimeout(value time.Duration) Transport {
+func (t *Transport) IdleConnTimeout(value time.Duration) *Transport {
 	t.Transport.IdleConnTimeout = value
 	return t
 }
 
 // ResponseHeaderTimeout sets http.Transport.ResponseHeaderTimeout.
-func (t Transport) ResponseHeaderTimeout(value time.Duration) Transport {
+func (t *Transport) ResponseHeaderTimeout(value time.Duration) *Transport {
 	t.Transport.ResponseHeaderTimeout = value
 	return t
 }
 
 // TLSHandshakeTimeout sets http.Transport.TLSHandshakeTimeout.
-func (t Transport) TLSHandshakeTimeout(value time.Duration) Transport {
+func (t *Transport) TLSHandshakeTimeout(value time.Duration) *Transport {
 	t.Transport.TLSHandshakeTimeout = value
 	return t
 }
 
-func (t Transport) TLSClientConfig(value *tls.Config) Transport {
+func (t *Transport) TLSClientConfig(value *tls.Config) *Transport {
 	t.Transport.TLSClientConfig = value
 	return t
 }
 
 // ExpectContinueTimeout sets http.Transport.ExpectContinueTimeout.
-func (t Transport) ExpectContinueTimeout(value time.Duration) Transport {
+func (t *Transport) ExpectContinueTimeout(value time.Duration) *Transport {
 	t.Transport.ExpectContinueTimeout = value
 	return t
 }
 
-func (t Transport) RateLimiter(rateLimiter flu.RateLimiter) Transport {
+func (t *Transport) RateLimiter(rateLimiter flu.RateLimiter) *Transport {
 	t.rateLimiter = rateLimiter
 	return t
 }
 
-func (t Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err := t.rateLimiter.Start(req.Context()); err != nil {
 		return nil, err
 	}
@@ -110,6 +110,6 @@ func (t Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // NewClient creates a new Client with this Transport.
-func (t Transport) NewClient() Client {
+func (t *Transport) NewClient() *Client {
 	return NewClient(&http.Client{Transport: t})
 }

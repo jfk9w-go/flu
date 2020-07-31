@@ -2,9 +2,7 @@ package metrics
 
 import (
 	"context"
-	"io"
 	"log"
-	"net"
 	"strconv"
 	"strings"
 	"sync"
@@ -13,6 +11,8 @@ import (
 	"github.com/jfk9w-go/flu"
 	"github.com/pkg/errors"
 )
+
+var GraphiteTimeout = 1 * time.Minute
 
 type GraphiteMetric interface {
 	Reset() (last float64, set bool)
@@ -136,7 +136,10 @@ func (g *GraphiteClient) Flush(now time.Time) error {
 		return nil
 	}
 
-	if err := flu.EncodeTo(&flu.PlainText{b.String()}, TCP(g.address)); err != nil {
+	ctx, _ := context.WithTimeout(context.Background(), GraphiteTimeout)
+	data := &flu.PlainText{b.String()}
+	conn := flu.Conn{Context: ctx, Network: "tcp", Address: g.address}
+	if err := flu.EncodeTo(data, conn); err != nil {
 		return errors.Wrap(err, "write")
 	}
 
@@ -206,10 +209,4 @@ func (g *GraphiteClient) makeKey(name string, labels Labels) string {
 	}
 
 	return prefix + name
-}
-
-type TCP string
-
-func (address TCP) Writer() (io.Writer, error) {
-	return net.Dial("tcp", string(address))
 }

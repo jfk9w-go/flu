@@ -24,11 +24,11 @@ type Client struct {
 
 // NewClient wraps the passed http.Client.
 // If http == nil, creates a new http.Client
-func NewClient(client *http.Client) Client {
+func NewClient(client *http.Client) *Client {
 	if client == nil {
 		client = &http.Client{Transport: NewTransport().Transport}
 	}
-	return Client{
+	return &Client{
 		Client:   client,
 		header:   make(http.Header),
 		statuses: make(map[int]bool),
@@ -36,12 +36,12 @@ func NewClient(client *http.Client) Client {
 }
 
 // AddHeader allows to specify default header set to every request.
-func (c Client) AddHeader(key, value string) Client {
+func (c *Client) AddHeader(key, value string) *Client {
 	c.header.Add(key, value)
 	return c
 }
 
-func (c Client) AddHeaders(kvPairs ...string) Client {
+func (c *Client) AddHeaders(kvPairs ...string) *Client {
 	l := keyValuePairsLength(kvPairs)
 	for i := 0; i < l; i++ {
 		c.AddHeader(kvPairs[2*i], kvPairs[2*i+1])
@@ -49,12 +49,12 @@ func (c Client) AddHeaders(kvPairs ...string) Client {
 	return c
 }
 
-func (c Client) SetHeader(key, value string) Client {
+func (c *Client) SetHeader(key, value string) *Client {
 	c.header.Set(key, value)
 	return c
 }
 
-func (c Client) SetHeaders(kvPairs ...string) Client {
+func (c *Client) SetHeaders(kvPairs ...string) *Client {
 	l := keyValuePairsLength(kvPairs)
 	for i := 0; i < l; i++ {
 		c.SetHeader(kvPairs[2*i], kvPairs[2*i+1])
@@ -62,13 +62,13 @@ func (c Client) SetHeaders(kvPairs ...string) Client {
 	return c
 }
 
-func (c Client) Timeout(timeout time.Duration) Client {
+func (c *Client) Timeout(timeout time.Duration) *Client {
 	c.Client.Timeout = timeout
 	return c
 }
 
 // SetCookies sets the http.Client cookies.
-func (c Client) SetCookies(rawurl string, cookies ...*http.Cookie) Client {
+func (c *Client) SetCookies(rawurl string, cookies ...*http.Cookie) *Client {
 	u, err := _url.Parse(rawurl)
 	if err != nil {
 		panic(err)
@@ -85,7 +85,7 @@ func (c Client) SetCookies(rawurl string, cookies ...*http.Cookie) Client {
 	return c
 }
 
-func (c Client) AcceptStatus(codes ...int) Client {
+func (c *Client) AcceptStatus(codes ...int) *Client {
 	if c.statuses == nil {
 		c.statuses = make(map[int]bool)
 	}
@@ -95,50 +95,50 @@ func (c Client) AcceptStatus(codes ...int) Client {
 	return c
 }
 
-func (c Client) Auth(auth Authorization) Client {
+func (c *Client) Auth(auth Authorization) *Client {
 	c.auth = auth
 	return c
 }
 
-func (c Client) GET(resource string) Request {
+func (c *Client) GET(resource string) *Request {
 	return c.NewRequest(http.MethodGet, resource)
 }
 
-func (c Client) HEAD(resource string) Request {
+func (c *Client) HEAD(resource string) *Request {
 	return c.NewRequest(http.MethodHead, resource)
 }
 
-func (c Client) POST(resource string) Request {
+func (c *Client) POST(resource string) *Request {
 	return c.NewRequest(http.MethodPost, resource)
 }
 
-func (c Client) PUT(resource string) Request {
+func (c *Client) PUT(resource string) *Request {
 	return c.NewRequest(http.MethodPut, resource)
 }
 
-func (c Client) PATCH(resource string) Request {
+func (c *Client) PATCH(resource string) *Request {
 	return c.NewRequest(http.MethodPatch, resource)
 }
 
-func (c Client) DELETE(resource string) Request {
+func (c *Client) DELETE(resource string) *Request {
 	return c.NewRequest(http.MethodDelete, resource)
 }
 
-func (c Client) CONNECT(resource string) Request {
+func (c *Client) CONNECT(resource string) *Request {
 	return c.NewRequest(http.MethodConnect, resource)
 }
 
-func (c Client) OPTIONS(resource string) Request {
+func (c *Client) OPTIONS(resource string) *Request {
 	return c.NewRequest(http.MethodOptions, resource)
 }
 
-func (c Client) TRACE(resource string) Request {
+func (c *Client) TRACE(resource string) *Request {
 	return c.NewRequest(http.MethodTrace, resource)
 }
 
 // NewRequest creates a NewRequest.
-func (c Client) NewRequest(method string, rawurl string) Request {
-	req := Request{
+func (c *Client) NewRequest(method string, rawurl string) *Request {
+	req := &Request{
 		Request: &http.Request{
 			Method:     method,
 			Proto:      "HTTP/1.1",

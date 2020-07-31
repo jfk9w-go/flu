@@ -23,7 +23,7 @@ type ResponseHandler interface {
 }
 
 // HandleResponse executes a ResponseHandler if no previous handling errors occurred.
-func (r Response) HandleResponse(handler ResponseHandler) Response {
+func (r *Response) HandleResponse(handler ResponseHandler) *Response {
 	if r.Error != nil {
 		return r
 	}
@@ -59,7 +59,7 @@ func NewStatusCodeError(r *http.Response) StatusCodeError {
 }
 
 // CheckStatus checks the response status code and sets the error to StatusCodeError if there is no match.
-func (r Response) CheckStatus(codes ...int) Response {
+func (r *Response) CheckStatus(codes ...int) *Response {
 	if r.Error != nil {
 		return r
 	}
@@ -72,7 +72,7 @@ func (r Response) CheckStatus(codes ...int) Response {
 	return r.complete(NewStatusCodeError(r.Response))
 }
 
-func (r Response) CheckContentType(value string) Response {
+func (r *Response) CheckContentType(value string) *Response {
 	if r.Error != nil {
 		return r
 	}
@@ -84,7 +84,7 @@ func (r Response) CheckContentType(value string) Response {
 }
 
 // Decode reads the response body.
-func (r Response) DecodeBody(decoder flu.DecoderFrom) Response {
+func (r *Response) DecodeBody(decoder flu.DecoderFrom) *Response {
 	if r.Error != nil {
 		return r
 	}
@@ -106,7 +106,7 @@ func (b *bodyReaderHandler) Handle(resp *http.Response) error {
 	return nil
 }
 
-func (r Response) Reader() (io.Reader, error) {
+func (r *Response) Reader() (io.Reader, error) {
 	if r.Error != nil {
 		return nil, r.Error
 	}
@@ -123,14 +123,14 @@ func (e WritableError) Error() string {
 	return fmt.Sprintf("failed to create writer: %s", e.Err)
 }
 
-func (r Response) DecodeBodyTo(out flu.Output) Response {
+func (r *Response) DecodeBodyTo(out flu.Output) *Response {
 	if r.Error != nil {
 		return r
 	}
 	return r.complete(flu.Copy(flu.IO{R: r.Body}, out))
 }
 
-func (r Response) complete(err error) Response {
+func (r *Response) complete(err error) *Response {
 	r.Error = err
 	return r
 }

@@ -17,13 +17,13 @@ import (
 // NewRequest allows to set basic http.NewRequest properties.
 type Request struct {
 	*http.Request
-	client Client
+	client *Client
 	query  url.Values
 	body   interface{}
 	err    error
 }
 
-func (r Request) URL(url *url.URL) Request {
+func (r *Request) URL(url *url.URL) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -33,7 +33,7 @@ func (r Request) URL(url *url.URL) Request {
 }
 
 // AddHeader adds a request header.
-func (r Request) AddHeader(key, value string) Request {
+func (r *Request) AddHeader(key, value string) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -42,7 +42,7 @@ func (r Request) AddHeader(key, value string) Request {
 }
 
 // SetHeader sets a request header.
-func (r Request) SetHeader(key, value string) Request {
+func (r *Request) SetHeader(key, value string) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -70,7 +70,7 @@ func keyValuePairsLength(kvPairs []string) int {
 
 // AddHeaders adds request header.
 // kvPairs is an array of key-value pairs and must have even length.
-func (r Request) AddHeaders(kvPairs ...string) Request {
+func (r *Request) AddHeaders(kvPairs ...string) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -84,7 +84,7 @@ func (r Request) AddHeaders(kvPairs ...string) Request {
 
 // SetHeaders sets request header.
 // kvPairs is an array of key-value pairs and must have even length.
-func (r Request) SetHeaders(kvPairs ...string) Request {
+func (r *Request) SetHeaders(kvPairs ...string) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -96,7 +96,7 @@ func (r Request) SetHeaders(kvPairs ...string) Request {
 	return r
 }
 
-func (r Request) Auth(auth Authorization) Request {
+func (r *Request) Auth(auth Authorization) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -105,7 +105,7 @@ func (r Request) Auth(auth Authorization) Request {
 }
 
 // QueryParam sets a query parameter.
-func (r Request) QueryParam(key, value string) Request {
+func (r *Request) QueryParam(key, value string) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -113,14 +113,14 @@ func (r Request) QueryParam(key, value string) Request {
 	return r
 }
 
-func (r Request) ContentType(contentType string) Request {
+func (r *Request) ContentType(contentType string) *Request {
 	if r.err != nil {
 		return r
 	}
 	return r.SetHeader("Content-Type", contentType)
 }
 
-func (r Request) ContentLength(contentLength int64) Request {
+func (r *Request) ContentLength(contentLength int64) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -128,7 +128,7 @@ func (r Request) ContentLength(contentLength int64) Request {
 	return r
 }
 
-func (r Request) BodyEncoder(encoder flu.EncoderTo) Request {
+func (r *Request) BodyEncoder(encoder flu.EncoderTo) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -136,7 +136,7 @@ func (r Request) BodyEncoder(encoder flu.EncoderTo) Request {
 	return r
 }
 
-func (r Request) BodyInput(input flu.Input) Request {
+func (r *Request) BodyInput(input flu.Input) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -144,7 +144,7 @@ func (r Request) BodyInput(input flu.Input) Request {
 	return r
 }
 
-func (r Request) Context(ctx context.Context) Request {
+func (r *Request) Context(ctx context.Context) *Request {
 	if r.err != nil {
 		return r
 	}
@@ -153,15 +153,15 @@ func (r Request) Context(ctx context.Context) Request {
 }
 
 // Execute executes the request and returns a response.
-func (r Request) Execute() Response {
+func (r *Request) Execute() *Response {
 	resp, err := r.do()
-	return Response{
+	return &Response{
 		Response: resp,
 		Error:    err,
 	}
 }
 
-func (r Request) do() (*http.Response, error) {
+func (r *Request) do() (*http.Response, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
