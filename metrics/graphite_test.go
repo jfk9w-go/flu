@@ -1,7 +1,6 @@
 package metrics_test
 
 import (
-	"context"
 	"sort"
 	"strings"
 	"testing"
@@ -14,13 +13,13 @@ import (
 )
 
 func TestGraphiteClient_Counter(t *testing.T) {
-	mock, err := testutil.RunMockServer(context.Background(), "tcp")
+	mock, err := testutil.RunMockServer("tcp")
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "create graphite mock"))
 	}
 	defer mock.Close()
 
-	client := metrics.NewGraphiteClient(context.Background(), mock.Address, 0)
+	client := metrics.NewGraphiteClient(mock.Address, 0)
 	defer client.Close()
 
 	client.Counter("counter", nil).Add(1)
@@ -59,13 +58,13 @@ func TestGraphiteClient_Counter(t *testing.T) {
 }
 
 func TestGraphiteClient_Gauge(t *testing.T) {
-	mock, err := testutil.RunMockServer(context.Background(), "tcp")
+	mock, err := testutil.RunMockServer("tcp")
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "create graphite mock"))
 	}
 	defer mock.Close()
 
-	client := metrics.NewGraphiteClient(context.Background(), mock.Address, 0)
+	client := metrics.NewGraphiteClient(mock.Address, 0)
 	defer client.Close()
 
 	client.Gauge("gauge", nil).Set(1)

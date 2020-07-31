@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -68,8 +69,8 @@ type GraphiteClient struct {
 	work    *sync.WaitGroup
 }
 
-func NewGraphiteClient(ctx context.Context, address string, interval time.Duration) GraphiteClient {
-	ctx, cancel := context.WithCancel(ctx)
+func NewGraphiteClient(address string, interval time.Duration) GraphiteClient {
+	ctx, cancel := context.WithCancel(context.Background())
 	client := GraphiteClient{
 		address: address,
 		metrics: make(map[string]GraphiteMetric),
@@ -135,13 +136,7 @@ func (g GraphiteClient) Flush(now time.Time) error {
 		return nil
 	}
 
-	conn, err := net.Dial("tcp", g.address)
-	if err != nil {
-		return errors.Wrap(err, "connect")
-	}
-
-	err = flu.EncodeTo(&flu.PlainText{b.String()}, flu.IO{W: conn})
-	if err != nil {
+	if err := flu.EncodeTo(&flu.PlainText{b.String()}, tcpConnection(g.address)); err != nil {
 		return errors.Wrap(err, "write")
 	}
 
@@ -210,4 +205,10 @@ func (g GraphiteClient) makeKey(name string, labels Labels) string {
 	}
 
 	return prefix + name
+}
+
+type tcpConnection string
+
+func (address tcpConnection) Writer() (io.Writer, error) {
+	return net.Dial("tcp", string(address))
 }

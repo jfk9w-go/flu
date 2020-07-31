@@ -18,13 +18,13 @@ type MockServer struct {
 	work     sync.WaitGroup
 }
 
-func RunMockServer(ctx context.Context, network string) (*MockServer, error) {
+func RunMockServer(network string) (*MockServer, error) {
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		return nil, errors.Wrap(err, "find free port")
 	}
 	address := fmt.Sprintf("localhost:%d", port)
-	listener, err := new(net.ListenConfig).Listen(ctx, network, address)
+	listener, err := new(net.ListenConfig).Listen(context.Background(), network, address)
 	if err != nil {
 		return nil, err
 	}
