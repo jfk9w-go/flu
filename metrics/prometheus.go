@@ -26,7 +26,7 @@ type PrometheusListener struct {
 	mu       *sync.RWMutex
 }
 
-func NewPrometheusListener(address string) PrometheusListener {
+func NewPrometheusListener(address string) *PrometheusListener {
 	u, err := url.Parse(address)
 	if err != nil {
 		panic(errors.Wrap(err, "invalid prometheus address"))
@@ -47,7 +47,7 @@ func NewPrometheusListener(address string) PrometheusListener {
 		}
 	}()
 
-	return PrometheusListener{
+	return &PrometheusListener{
 		server:   server,
 		registry: registry,
 		entries:  make(map[prometheusKey]interface{}),
@@ -55,26 +55,27 @@ func NewPrometheusListener(address string) PrometheusListener {
 	}
 }
 
-func (p PrometheusListener) MustRegister(cs ...prometheus.Collector) PrometheusListener {
+func (p *PrometheusListener) MustRegister(cs ...prometheus.Collector) *PrometheusListener {
 	p.registry.MustRegister(cs...)
 	return p
 }
 
-func (p PrometheusListener) Close(ctx context.Context) error {
+func (p *PrometheusListener) Close(ctx context.Context) error {
 	return p.server.Shutdown(ctx)
 }
 
-func (p PrometheusListener) WithPrefix(prefix string) Registry {
-	if p.prefix != "" {
-		p.prefix += "_" + prefix
+func (p *PrometheusListener) WithPrefix(prefix string) Registry {
+	listener := *p
+	if listener.prefix != "" {
+		listener.prefix += "_" + prefix
 	} else {
-		p.prefix = prefix
+		listener.prefix = prefix
 	}
 
-	return p
+	return &listener
 }
 
-func (p PrometheusListener) Counter(name string, labels Labels) Counter {
+func (p *PrometheusListener) Counter(name string, labels Labels) Counter {
 	key := prometheusKey{p.prefix, name}
 	p.mu.RLock()
 	entry, ok := p.entries[key]
@@ -111,7 +112,7 @@ func (p PrometheusListener) Counter(name string, labels Labels) Counter {
 	return entry.(Counter)
 }
 
-func (p PrometheusListener) Gauge(name string, labels Labels) Gauge {
+func (p *PrometheusListener) Gauge(name string, labels Labels) Gauge {
 	key := prometheusKey{p.prefix, name}
 	p.mu.RLock()
 	entry, ok := p.entries[key]

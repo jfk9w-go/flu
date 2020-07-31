@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPrometheusClient_Counter(t *testing.T) {
+func TestPrometheusListener_Counter(t *testing.T) {
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "find free port"))
@@ -73,7 +73,7 @@ func TestPrometheusClient_Counter(t *testing.T) {
 		"labels_counter{A=\"1\",B=\"2\"} 1\n", text.Value)
 }
 
-func TestPrometheusClient_Gauge(t *testing.T) {
+func TestPrometheusListener_Gauge(t *testing.T) {
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "find free port"))

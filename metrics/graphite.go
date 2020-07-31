@@ -69,9 +69,9 @@ type GraphiteClient struct {
 	work    *sync.WaitGroup
 }
 
-func NewGraphiteClient(address string, interval time.Duration) GraphiteClient {
+func NewGraphiteClient(address string, interval time.Duration) *GraphiteClient {
 	ctx, cancel := context.WithCancel(context.Background())
-	client := GraphiteClient{
+	client := &GraphiteClient{
 		address: address,
 		metrics: make(map[string]GraphiteMetric),
 		mu:      new(sync.RWMutex),
@@ -107,12 +107,12 @@ func NewGraphiteClient(address string, interval time.Duration) GraphiteClient {
 	return client
 }
 
-func (g GraphiteClient) Close() {
+func (g *GraphiteClient) Close() {
 	g.cancel()
 	g.work.Wait()
 }
 
-func (g GraphiteClient) Flush(now time.Time) error {
+func (g *GraphiteClient) Flush(now time.Time) error {
 	b := new(strings.Builder)
 	nowstr := strconv.FormatInt(now.Unix(), 10)
 
@@ -136,23 +136,24 @@ func (g GraphiteClient) Flush(now time.Time) error {
 		return nil
 	}
 
-	if err := flu.EncodeTo(&flu.PlainText{b.String()}, tcpConnection(g.address)); err != nil {
+	if err := flu.EncodeTo(&flu.PlainText{b.String()}, TCP(g.address)); err != nil {
 		return errors.Wrap(err, "write")
 	}
 
 	return nil
 }
 
-func (g GraphiteClient) WithPrefix(prefix string) Registry {
-	if g.prefix != "" {
-		g.prefix += "."
+func (g *GraphiteClient) WithPrefix(prefix string) Registry {
+	client := *g
+	if client.prefix != "" {
+		client.prefix += "."
 	}
 
-	g.prefix += prefix
-	return g
+	client.prefix += prefix
+	return &client
 }
 
-func (g GraphiteClient) Counter(name string, labels Labels) Counter {
+func (g *GraphiteClient) Counter(name string, labels Labels) Counter {
 	key := g.makeKey(name, labels)
 
 	g.mu.RLock()
@@ -172,7 +173,7 @@ func (g GraphiteClient) Counter(name string, labels Labels) Counter {
 	return entry.(Counter)
 }
 
-func (g GraphiteClient) Gauge(name string, labels Labels) Gauge {
+func (g *GraphiteClient) Gauge(name string, labels Labels) Gauge {
 	key := g.makeKey(name, labels)
 
 	g.mu.RLock()
@@ -192,7 +193,7 @@ func (g GraphiteClient) Gauge(name string, labels Labels) Gauge {
 	return entry.(Gauge)
 }
 
-func (g GraphiteClient) makeKey(name string, labels Labels) string {
+func (g *GraphiteClient) makeKey(name string, labels Labels) string {
 	prefix := g.prefix
 	if prefix != "" {
 		prefix += "."
@@ -207,8 +208,8 @@ func (g GraphiteClient) makeKey(name string, labels Labels) string {
 	return prefix + name
 }
 
-type tcpConnection string
+type TCP string
 
-func (address tcpConnection) Writer() (io.Writer, error) {
+func (address TCP) Writer() (io.Writer, error) {
 	return net.Dial("tcp", string(address))
 }
