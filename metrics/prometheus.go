@@ -66,12 +66,7 @@ func (p *PrometheusListener) Close(ctx context.Context) error {
 
 func (p *PrometheusListener) WithPrefix(prefix string) Registry {
 	listener := *p
-	if listener.prefix != "" {
-		listener.prefix += "_" + prefix
-	} else {
-		listener.prefix = prefix
-	}
-
+	listener.prefix = withPrefix(listener.prefix, prefix, "_")
 	return &listener
 }
 

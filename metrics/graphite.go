@@ -148,11 +148,7 @@ func (g *GraphiteClient) Flush(now time.Time) error {
 
 func (g *GraphiteClient) WithPrefix(prefix string) Registry {
 	client := *g
-	if client.prefix != "" {
-		client.prefix += "."
-	}
-
-	client.prefix += prefix
+	client.prefix = withPrefix(client.prefix, prefix, ".")
 	return &client
 }
 

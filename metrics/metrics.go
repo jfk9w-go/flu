@@ -33,6 +33,14 @@ func (l Labels) checkLength() {
 	}
 }
 
+func withPrefix(base, suffix, sep string) string {
+	if base != "" {
+		base += sep
+	}
+
+	return base + suffix
+}
+
 func (l Labels) Keys() []string {
 	if l == nil {
 		return nil

@@ -56,21 +56,17 @@ func (g DummyGauge) Sub(delta float64) {
 	}
 }
 
-type DummyClient struct {
+type DummyRegistry struct {
 	Prefix string
 	Log    bool
 }
 
-func (d DummyClient) WithPrefix(prefix string) Registry {
-	if d.Prefix != "" {
-		d.Prefix += "."
-	}
-
-	d.Prefix += prefix
+func (d DummyRegistry) WithPrefix(prefix string) Registry {
+	d.Prefix = withPrefix(d.Prefix, prefix, ".")
 	return d
 }
 
-func (d DummyClient) Counter(name string, labels Labels) Counter {
+func (d DummyRegistry) Counter(name string, labels Labels) Counter {
 	if d.Prefix != "" {
 		d.Prefix += "."
 	}
@@ -82,7 +78,7 @@ func (d DummyClient) Counter(name string, labels Labels) Counter {
 	}
 }
 
-func (d DummyClient) Gauge(name string, labels Labels) Gauge {
+func (d DummyRegistry) Gauge(name string, labels Labels) Gauge {
 	if d.Prefix != "" {
 		d.Prefix += "."
 	}
