@@ -2,6 +2,7 @@ package flu
 
 import (
 	"encoding/json"
+	"math"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -17,59 +18,60 @@ func (s Uint64Set) Add(key uint64) {
 	s[key] = true
 }
 
-func (s Uint64Set) Delete(key uint64) {
-	delete(s, key)
-}
-
 type BigUint64Set struct {
-	Avg string   `json:"a,omitempty"`
-	Dev []string `json:"d,omitempty"`
+	Base string    `json:"b,omitempty"`
+	Off  StringSet `json:"o,omitempty"`
 }
 
 func (s Uint64Set) MarshalJSON() ([]byte, error) {
-	var sum uint64
+	var base uint64 = math.MaxUint64
 	for value := range s {
-		sum += value
+		if value < base {
+			base = value
+		}
 	}
 
 	size := len(s)
-	repr := BigUint64Set{Dev: make([]string, size)}
-	var avg uint64
+	repr := BigUint64Set{Off: make(StringSet, size)}
 	if size > 0 {
-		avg = sum / uint64(size)
-		repr.Avg = strconv.FormatUint(avg, 36)
+		repr.Base = strconv.FormatUint(base, 36)
 	}
 
-	i := 0
 	for value := range s {
-		repr.Dev[i] = strconv.FormatUint(value-avg, 36)
+		off := value - base
+		if off == 0 {
+			continue
+		}
+
+		repr.Off.Add(strconv.FormatUint(off, 36))
 	}
 
 	return json.Marshal(repr)
 }
 
 func (s Uint64Set) UnmarshalJSON(data []byte) error {
-	var repr BigUint64Set
+	repr := BigUint64Set{Off: make(StringSet)}
 	if err := json.Unmarshal(data, &repr); err != nil {
 		return errors.Wrap(err, "unmarshal repr")
 	}
 
-	if len(repr.Dev) == 0 {
+	if string(data) == "{}" {
 		return nil
 	}
 
-	avg, err := strconv.ParseUint(repr.Avg, 36, 64)
+	base, err := strconv.ParseUint(repr.Base, 36, 64)
 	if err != nil {
 		return errors.Wrap(err, "parse avg")
 	}
 
-	for _, devstr := range repr.Dev {
-		dev, err := strconv.ParseUint(devstr, 36, 64)
+	s.Add(base)
+	for str := range repr.Off {
+		off, err := strconv.ParseUint(str, 36, 64)
 		if err != nil {
-			return errors.Wrapf(err, "parse dev: %s", devstr)
+			return errors.Wrapf(err, "parse offset: %s", str)
 		}
 
-		s[avg+dev] = true
+		s.Add(base + off)
 	}
 
 	return nil
