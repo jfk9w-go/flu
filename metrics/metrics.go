@@ -10,6 +10,7 @@ type Registry interface {
 	WithPrefix(prefix string) Registry
 	Counter(name string, labels Labels) Counter
 	Gauge(name string, labels Labels) Gauge
+	Histogram(name string, labels Labels, buckets []float64) Histogram
 }
 
 type Counter interface {
@@ -23,6 +24,10 @@ type Gauge interface {
 	Dec()
 	Add(delta float64)
 	Sub(delta float64)
+}
+
+type Histogram interface {
+	Observe(value float64)
 }
 
 type Labels []string

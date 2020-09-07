@@ -56,6 +56,18 @@ func (g DummyGauge) Sub(delta float64) {
 	}
 }
 
+type DummyHistogram struct {
+	Name   string
+	Labels Labels
+	Log    bool
+}
+
+func (h DummyHistogram) Observe(value float64) {
+	if h.Log {
+		log.Printf("metrics.DummyHistogram %s %v", h.Name, value)
+	}
+}
+
 type DummyRegistry struct {
 	Prefix string
 	Log    bool
@@ -67,24 +79,24 @@ func (d DummyRegistry) WithPrefix(prefix string) Registry {
 }
 
 func (d DummyRegistry) Counter(name string, labels Labels) Counter {
-	if d.Prefix != "" {
-		d.Prefix += "."
-	}
-
 	return DummyCounter{
-		Name:   d.Prefix + name,
+		Name:   withPrefix(d.Prefix, name, "."),
 		Labels: labels,
 		Log:    d.Log,
 	}
 }
 
 func (d DummyRegistry) Gauge(name string, labels Labels) Gauge {
-	if d.Prefix != "" {
-		d.Prefix += "."
-	}
-
 	return DummyGauge{
-		Name:   d.Prefix + name,
+		Name:   withPrefix(d.Prefix, name, "."),
+		Labels: labels,
+		Log:    d.Log,
+	}
+}
+
+func (d DummyRegistry) Histogram(name string, labels Labels, _ []float64) Histogram {
+	return DummyHistogram{
+		Name:   withPrefix(d.Prefix, name, "."),
 		Labels: labels,
 		Log:    d.Log,
 	}

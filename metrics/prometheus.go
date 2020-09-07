@@ -143,3 +143,45 @@ func (p *PrometheusListener) Gauge(name string, labels Labels) Gauge {
 
 	return entry.(Gauge)
 }
+
+func (p *PrometheusListener) Histogram(name string, labels Labels, buckets []float64) Histogram {
+	if buckets == nil {
+		buckets = prometheus.DefBuckets
+	}
+
+	key := prometheusKey{p.prefix, name}
+	p.mu.RLock()
+	entry, ok := p.entries[key]
+	p.mu.RUnlock()
+	if !ok {
+		p.mu.Lock()
+		entry, ok = p.entries[key]
+		if !ok {
+			opts := prometheus.HistogramOpts{
+				Namespace: p.prefix,
+				Name:      name,
+				Buckets:   buckets,
+			}
+
+			if labels == nil {
+				gauge := prometheus.NewHistogram(opts)
+				p.registry.MustRegister(gauge)
+				p.entries[key] = gauge
+				entry = gauge
+			} else {
+				vec := prometheus.NewHistogramVec(opts, labels.Keys())
+				p.registry.MustRegister(vec)
+				p.entries[key] = vec
+				entry = vec
+			}
+		}
+
+		p.mu.Unlock()
+	}
+
+	if labels != nil {
+		entry = entry.(*prometheus.HistogramVec).With(labels.Map())
+	}
+
+	return entry.(Histogram)
+}

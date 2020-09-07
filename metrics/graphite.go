@@ -2,7 +2,9 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,7 +17,7 @@ import (
 var GraphiteTimeout = 1 * time.Minute
 
 type GraphiteMetric interface {
-	Reset() (last float64, set bool)
+	Write(b *strings.Builder, now string, key string)
 }
 
 type GraphiteCounter AtomicFloat64
@@ -32,6 +34,20 @@ func (c *GraphiteCounter) Reset() (float64, bool) {
 	zero := float64(0)
 	value := (*AtomicFloat64)(c).Swap(zero)
 	return value, value != zero
+}
+
+func (c *GraphiteCounter) Write(b *strings.Builder, now string, key string) {
+	value, set := c.Reset()
+	if !set {
+		return
+	}
+
+	b.WriteString(key)
+	b.WriteRune(' ')
+	b.WriteString(strconv.FormatFloat(value, 'f', 9, 64))
+	b.WriteRune(' ')
+	b.WriteString(now)
+	b.WriteRune('\n')
 }
 
 type GraphiteGauge AtomicFloat64
@@ -60,7 +76,52 @@ func (g *GraphiteGauge) Reset() (float64, bool) {
 	return (*AtomicFloat64)(g).Get(), true
 }
 
+func (g *GraphiteGauge) Write(b *strings.Builder, now string, key string) {
+	value, set := g.Reset()
+	if !set {
+		return
+	}
+
+	b.WriteString(key)
+	b.WriteRune(' ')
+	b.WriteString(strconv.FormatFloat(value, 'f', 9, 64))
+	b.WriteRune(' ')
+	b.WriteString(now)
+	b.WriteRune('\n')
+}
+
+type GraphiteHistogram struct {
+	buckets  []float64
+	counters []*GraphiteCounter
+	hbf      string
+}
+
+func (h GraphiteHistogram) Observe(value float64) {
+	idx := len(h.buckets)
+	for i, upper := range h.buckets {
+		if value < upper {
+			idx = i
+			break
+		}
+	}
+
+	h.counters[idx].Inc()
+}
+
+func (h GraphiteHistogram) Write(b *strings.Builder, now string, key string) {
+	for i, counter := range h.counters {
+		bucket := "inf"
+		if h.buckets[i] != math.MaxFloat64 {
+			bucket = fmt.Sprintf(h.hbf, h.buckets[i])
+		}
+
+		counter.Write(b, now, key+"."+strings.Replace(bucket, ".", "_", 1))
+	}
+}
+
 type GraphiteClient struct {
+	HistogramBucketFormat string
+
 	address string
 	prefix  string
 	metrics map[string]GraphiteMetric
@@ -72,11 +133,12 @@ type GraphiteClient struct {
 func NewGraphiteClient(address string, interval time.Duration) *GraphiteClient {
 	ctx, cancel := context.WithCancel(context.Background())
 	client := &GraphiteClient{
-		address: address,
-		metrics: make(map[string]GraphiteMetric),
-		mu:      new(sync.RWMutex),
-		cancel:  cancel,
-		work:    new(sync.WaitGroup),
+		address:               address,
+		metrics:               make(map[string]GraphiteMetric),
+		mu:                    new(sync.RWMutex),
+		cancel:                cancel,
+		work:                  new(sync.WaitGroup),
+		HistogramBucketFormat: "%.2f",
 	}
 
 	if interval > 0 {
@@ -118,17 +180,7 @@ func (g *GraphiteClient) Flush(now time.Time) error {
 
 	g.mu.RLock()
 	for key, metric := range g.metrics {
-		value, set := metric.Reset()
-		if !set {
-			continue
-		}
-
-		b.WriteString(key)
-		b.WriteRune(' ')
-		b.WriteString(strconv.FormatFloat(value, 'f', 9, 64))
-		b.WriteRune(' ')
-		b.WriteString(nowstr)
-		b.WriteRune('\n')
+		metric.Write(b, nowstr, key)
 	}
 
 	g.mu.RUnlock()
@@ -136,7 +188,8 @@ func (g *GraphiteClient) Flush(now time.Time) error {
 		return nil
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), GraphiteTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), GraphiteTimeout)
+	defer cancel()
 	data := &flu.PlainText{b.String()}
 	conn := flu.Conn{Context: ctx, Network: "tcp", Address: g.address}
 	if err := flu.EncodeTo(data, conn); err != nil {
@@ -190,6 +243,37 @@ func (g *GraphiteClient) Gauge(name string, labels Labels) Gauge {
 	}
 
 	return entry.(Gauge)
+}
+
+func (g *GraphiteClient) Histogram(name string, labels Labels, buckets []float64) Histogram {
+	key := g.makeKey(name, labels)
+
+	g.mu.RLock()
+	entry, ok := g.metrics[key]
+	g.mu.RUnlock()
+
+	if !ok {
+		g.mu.Lock()
+		entry, ok = g.metrics[key]
+		if !ok {
+			buckets := append(buckets, math.MaxFloat64)
+			counters := make([]*GraphiteCounter, len(buckets))
+			for i := range buckets {
+				counters[i] = new(GraphiteCounter)
+			}
+
+			entry = GraphiteHistogram{
+				buckets:  buckets,
+				counters: counters,
+				hbf:      g.HistogramBucketFormat,
+			}
+
+			g.metrics[key] = entry
+		}
+		g.mu.Unlock()
+	}
+
+	return entry.(GraphiteHistogram)
 }
 
 func (g *GraphiteClient) makeKey(name string, labels Labels) string {
