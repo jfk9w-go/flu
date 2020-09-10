@@ -107,3 +107,27 @@ func (c Conn) Reader() (io.Reader, error) {
 func (c Conn) Writer() (io.Writer, error) {
 	return c.Dial()
 }
+
+type ReaderCloser struct {
+	io.Reader
+}
+
+func (rc ReaderCloser) Close() error {
+	if closer, ok := rc.Reader.(io.Closer); ok {
+		return closer.Close()
+	}
+
+	return nil
+}
+
+type WriterCloser struct {
+	io.Writer
+}
+
+func (wc WriterCloser) Close() error {
+	if closer, ok := wc.Writer.(io.Closer); ok {
+		return closer.Close()
+	}
+
+	return nil
+}

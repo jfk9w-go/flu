@@ -32,6 +32,10 @@ type Histogram interface {
 
 type Labels []string
 
+func (l Labels) Append(values ...string) Labels {
+	return Labels(append(l, values...))
+}
+
 func (l Labels) checkLength() {
 	if len(l)%2 != 0 {
 		panic(errors.Errorf("invalid Labels length: %d", len(l)))

@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 	"net/http/cookiejar"
-	_url "net/url"
+	url "net/url"
 	"time"
 )
 
@@ -67,21 +67,27 @@ func (c *Client) Timeout(timeout time.Duration) *Client {
 	return c
 }
 
-// SetCookies sets the http.Client cookies.
-func (c *Client) SetCookies(rawurl string, cookies ...*http.Cookie) *Client {
-	u, err := _url.Parse(rawurl)
-	if err != nil {
-		panic(err)
-	}
-	if c.Client.Jar == nil {
+func (c *Client) WithCookies() *Client {
+	if c.Jar == nil {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
 			panic(err)
 		}
-		c.Client.Jar = jar
+		c.Jar = jar
 	}
-	cookies = append(cookies, c.Client.Jar.Cookies(u)...)
-	c.Client.Jar.SetCookies(u, cookies)
+
+	return c
+}
+
+// SetCookies sets the http.Client cookies.
+func (c *Client) SetCookies(rawurl string, cookies ...*http.Cookie) *Client {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		panic(err)
+	}
+	c.WithCookies()
+	cookies = append(cookies, c.Jar.Cookies(u)...)
+	c.Jar.SetCookies(u, cookies)
 	return c
 }
 
@@ -144,22 +150,23 @@ func (c *Client) NewRequest(method string, rawurl string) *Request {
 			Proto:      "HTTP/1.1",
 			ProtoMajor: 1,
 			ProtoMinor: 1,
+			Header:     c.header.Clone(),
 		},
 		client: c,
 	}
 
 	if rawurl != "" {
-		url, err := _url.Parse(rawurl)
+		url, err := url.Parse(rawurl)
 		if err != nil {
 			req.err = err
 			return req
 		}
+
 		req = req.URL(url)
 		if c.auth != nil {
 			c.auth.SetAuth(req.Request)
 		}
 	}
 
-	req.Header = c.header.Clone()
 	return req
 }
