@@ -17,14 +17,17 @@ type ReaderCounter struct {
 	*Counter
 }
 
-func (rc ReaderCounter) Read(data []byte) (int, error) {
-	n, err := rc.Reader.Read(data)
-	if err != nil {
-		return 0, err
+func (rc ReaderCounter) Read(data []byte) (n int, err error) {
+	n = len(data)
+	if rc.Reader != nil {
+		n, err = rc.Reader.Read(data)
+		if err != nil {
+			return
+		}
 	}
 
 	rc.Add(int64(n))
-	return n, nil
+	return
 }
 
 func (rc ReaderCounter) Close() error {
@@ -36,10 +39,13 @@ type WriterCounter struct {
 	*Counter
 }
 
-func (wc WriterCounter) Write(data []byte) (int, error) {
-	n, err := wc.Writer.Write(data)
-	if err != nil {
-		return 0, err
+func (wc WriterCounter) Write(data []byte) (n int, err error) {
+	n = len(data)
+	if wc.Writer != nil {
+		n, err = wc.Writer.Write(data)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	wc.Add(int64(n))
@@ -56,18 +62,24 @@ type IOCounter struct {
 	Counter
 }
 
-func (c *IOCounter) Reader() (io.Reader, error) {
-	r, err := c.Input.Reader()
-	if err != nil {
-		return nil, err
+func (c *IOCounter) Reader() (r io.Reader, err error) {
+	if c.Input != nil {
+		r, err = c.Input.Reader()
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return ReaderCounter{Reader: r, Counter: &c.Counter}, nil
 }
 
-func (c *IOCounter) Writer() (io.Writer, error) {
-	w, err := c.Output.Writer()
-	if err != nil {
-		return nil, err
+func (c *IOCounter) Writer() (w io.Writer, err error) {
+	if c.Output != nil {
+		w, err = c.Output.Writer()
+		if err != nil {
+			return
+		}
 	}
+
 	return WriterCounter{Writer: w, Counter: &c.Counter}, nil
 }
