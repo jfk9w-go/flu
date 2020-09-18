@@ -1,4 +1,4 @@
-package flu
+package serde
 
 import (
 	"encoding/json"

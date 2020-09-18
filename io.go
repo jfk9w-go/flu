@@ -29,6 +29,15 @@ func (f File) Path() string {
 	return string(f)
 }
 
+func (f File) Exists() bool {
+	_, err := os.Stat(f.Path())
+	if err != nil && os.IsNotExist(err) {
+		return false
+	} else {
+		return true
+	}
+}
+
 func (f File) Open() (*os.File, error) {
 	return os.Open(f.Path())
 }
