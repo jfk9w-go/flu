@@ -14,7 +14,7 @@ type Time struct {
 	time.Time
 }
 
-func (t *Time) String() string {
+func (t Time) String() string {
 	return t.Time.Format(TimeLayout)
 }
 
@@ -40,7 +40,7 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 }
 
 func (t *Time) MarshalYAML() (interface{}, error) {
-	return t.Time.Format(TimeLayout), nil
+	return t.String(), nil
 }
 
 func (t *Time) UnmarshalYAML(node *yaml.Node) error {

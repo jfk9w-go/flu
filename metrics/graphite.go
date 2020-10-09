@@ -7,7 +7,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jfk9w-go/flu"
@@ -125,25 +124,24 @@ type GraphiteClient struct {
 	address string
 	prefix  string
 	metrics map[string]GraphiteMetric
-	mu      *sync.RWMutex
 	cancel  func()
-	work    *sync.WaitGroup
+
+	mu   *flu.RWMutex
+	work *flu.WaitGroup
 }
 
 func NewGraphiteClient(address string, interval time.Duration) *GraphiteClient {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
 	client := &GraphiteClient{
+		HistogramBucketFormat: "%.2f",
 		address:               address,
 		metrics:               make(map[string]GraphiteMetric),
-		mu:                    new(sync.RWMutex),
-		cancel:                cancel,
-		work:                  new(sync.WaitGroup),
-		HistogramBucketFormat: "%.2f",
+		mu:                    new(flu.RWMutex),
+		work:                  new(flu.WaitGroup),
 	}
 
 	if interval > 0 {
-		client.work.Add(1)
-		go func() {
+		client.cancel = client.work.Go(ctx, nil, func(ctx context.Context) {
 			timer := time.NewTimer(interval)
 			defer func() {
 				timer.Stop()
@@ -163,14 +161,17 @@ func NewGraphiteClient(address string, interval time.Duration) *GraphiteClient {
 					}
 				}
 			}
-		}()
+		})
 	}
 
 	return client
 }
 
 func (g *GraphiteClient) Close() {
-	g.cancel()
+	if g.cancel != nil {
+		g.cancel()
+	}
+
 	g.work.Wait()
 }
 
