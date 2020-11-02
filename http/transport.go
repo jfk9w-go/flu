@@ -14,6 +14,7 @@ import (
 // Transport is a fluent wrapper around *http.Transport.
 type Transport struct {
 	*http.Transport
+	*net.Dialer
 	rateLimiter flu.RateLimiter
 }
 
@@ -21,7 +22,11 @@ type Transport struct {
 // This should be equivalent to http.DefaultTransport
 func NewTransport() *Transport {
 	return &Transport{
-		Transport:   http.DefaultTransport.(*http.Transport).Clone(),
+		Transport: http.DefaultTransport.(*http.Transport).Clone(),
+		Dialer: &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		},
 		rateLimiter: flu.RateUnlimiter,
 	}
 }
@@ -46,6 +51,11 @@ func (t *Transport) ProxyURL(rawurl string) *Transport {
 // DialContext sets http.Transport.DialContext.
 func (t *Transport) DialContext(fun func(ctx context.Context, network, addr string) (net.Conn, error)) *Transport {
 	t.Transport.DialContext = fun
+	return t
+}
+
+func (t *Transport) DialTimeout(timeout time.Duration) *Transport {
+	t.Dialer.Timeout = timeout
 	return t
 }
 
@@ -96,6 +106,11 @@ func (t *Transport) ExpectContinueTimeout(value time.Duration) *Transport {
 	return t
 }
 
+func (t *Transport) ForceAttemptHTTP2(allow bool) *Transport {
+	t.Transport.ForceAttemptHTTP2 = allow
+	return t
+}
+
 func (t *Transport) RateLimiter(rateLimiter flu.RateLimiter) *Transport {
 	t.rateLimiter = rateLimiter
 	return t
@@ -111,5 +126,6 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // NewClient creates a new Client with this Transport.
 func (t *Transport) NewClient() *Client {
+	t.Transport.DialContext = t.Dialer.DialContext
 	return NewClient(&http.Client{Transport: t})
 }
