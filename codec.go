@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"golang.org/x/text/encoding"
+
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -42,15 +44,24 @@ func (x XML) ContentType() string {
 }
 
 type PlainText struct {
-	Value string
+	Value    string
+	Encoding encoding.Encoding
 }
 
 func (t *PlainText) EncodeTo(w io.Writer) error {
+	if t.Encoding != nil {
+		w = t.Encoding.NewEncoder().Writer(w)
+	}
+
 	_, err := io.WriteString(w, t.Value)
 	return err
 }
 
 func (t *PlainText) DecodeFrom(r io.Reader) error {
+	if t.Encoding != nil {
+		r = t.Encoding.NewDecoder().Reader(r)
+	}
+
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err

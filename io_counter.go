@@ -31,7 +31,7 @@ func (rc ReaderCounter) Read(data []byte) (n int, err error) {
 }
 
 func (rc ReaderCounter) Close() error {
-	return ReaderCloser{rc.Reader}.Close()
+	return Close(rc.Reader)
 }
 
 type WriterCounter struct {
@@ -53,7 +53,7 @@ func (wc WriterCounter) Write(data []byte) (n int, err error) {
 }
 
 func (wc WriterCounter) Close() error {
-	return WriterCloser{wc.Writer}.Close()
+	return Close(wc.Writer)
 }
 
 type IOCounter struct {

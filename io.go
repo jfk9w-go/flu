@@ -117,26 +117,18 @@ func (c Conn) Writer() (io.Writer, error) {
 	return c.Dial()
 }
 
-type ReaderCloser struct {
-	io.Reader
-}
-
-func (rc ReaderCloser) Close() error {
-	if closer, ok := rc.Reader.(io.Closer); ok {
+func Close(value interface{}) error {
+	if closer, ok := value.(io.Closer); ok {
 		return closer.Close()
+	} else {
+		return nil
 	}
-
-	return nil
 }
 
-type WriterCloser struct {
-	io.Writer
+type AnyCloser struct {
+	V interface{}
 }
 
-func (wc WriterCloser) Close() error {
-	if closer, ok := wc.Writer.(io.Closer); ok {
-		return closer.Close()
-	}
-
-	return nil
+func (c AnyCloser) Close() error {
+	return Close(c.V)
 }

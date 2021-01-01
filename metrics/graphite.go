@@ -191,7 +191,7 @@ func (g *GraphiteClient) Flush(now time.Time) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), GraphiteTimeout)
 	defer cancel()
-	data := &flu.PlainText{b.String()}
+	data := &flu.PlainText{Value: b.String()}
 	conn := flu.Conn{Context: ctx, Network: "tcp", Address: g.address}
 	if err := flu.EncodeTo(data, conn); err != nil {
 		return errors.Wrap(err, "write")

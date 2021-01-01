@@ -28,7 +28,7 @@ func EncodeTo(encoder EncoderTo, out Output) error {
 	if err != nil {
 		return err
 	}
-	defer WriterCloser{w}.Close()
+	defer Close(w)
 	return encoder.EncodeTo(w)
 }
 
@@ -37,7 +37,7 @@ func DecodeFrom(in Input, decoder DecoderFrom) error {
 	if err != nil {
 		return err
 	}
-	defer ReaderCloser{r}.Close()
+	defer Close(r)
 	return decoder.DecodeFrom(r)
 }
 
@@ -64,12 +64,12 @@ func Copy(in Input, out Output) error {
 	if err != nil {
 		return err
 	}
-	defer ReaderCloser{r}.Close()
+	defer Close(r)
 	w, err := out.Writer()
 	if err != nil {
 		return err
 	}
-	defer WriterCloser{w}.Close()
+	defer Close(w)
 	_, err = io.Copy(w, r)
 	return err
 }

@@ -47,7 +47,7 @@ func (e StatusCodeError) Error() string {
 func NewStatusCodeError(r *http.Response) StatusCodeError {
 	e := StatusCodeError{Code: r.StatusCode}
 	if r.Body != nil {
-		text := &flu.PlainText{""}
+		text := &flu.PlainText{Value: ""}
 		if err := flu.DecodeFrom(flu.IO{R: r.Body}, text); err != nil {
 			e.Text = fmt.Sprintf("response body read error: %s", err.Error())
 		} else {
