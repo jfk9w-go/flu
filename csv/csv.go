@@ -4,9 +4,8 @@ import (
 	"encoding/csv"
 	"io"
 
-	"golang.org/x/text/encoding"
-
 	"github.com/pkg/errors"
+	"golang.org/x/text/encoding"
 )
 
 type ParseError struct {
