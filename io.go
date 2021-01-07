@@ -13,13 +13,22 @@ import (
 type IO struct {
 	R io.Reader
 	W io.Writer
+	E error
 }
 
 func (io IO) Reader() (io.Reader, error) {
+	if io.E != nil {
+		return nil, io.E
+	}
+
 	return io.R, nil
 }
 
 func (io IO) Writer() (io.Writer, error) {
+	if io.E != nil {
+		return nil, io.E
+	}
+
 	return io.W, nil
 }
 

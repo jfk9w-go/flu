@@ -1,6 +1,10 @@
 package flu
 
-import "io"
+import (
+	"context"
+	"io"
+	"time"
+)
 
 type Input interface {
 	Reader() (io.Reader, error)
@@ -72,4 +76,13 @@ func Copy(in Input, out Output) error {
 	defer Close(w)
 	_, err = io.Copy(w, r)
 	return err
+}
+
+func Sleep(ctx context.Context, timeout time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(timeout):
+		return nil
+	}
 }
