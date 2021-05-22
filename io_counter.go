@@ -2,16 +2,21 @@ package flu
 
 import "io"
 
+// Counter is an int64 counter.
 type Counter int64
 
+// Value returns the current value of the *Counter.
 func (c *Counter) Value() int64 {
 	return *(*int64)(c)
 }
 
+// Add adds an int64 value to the counter.
 func (c *Counter) Add(n int64) {
 	*(*int64)(c) += n
 }
 
+// ReaderCounter is a counting io.Reader.
+// Useful for calculating the total size of read data.
 type ReaderCounter struct {
 	io.Reader
 	*Counter
@@ -34,6 +39,8 @@ func (rc ReaderCounter) Close() error {
 	return Close(rc.Reader)
 }
 
+// WriterCounter is a counting io.Writer.
+// Useful for calculating the total size of written data.
 type WriterCounter struct {
 	io.Writer
 	*Counter

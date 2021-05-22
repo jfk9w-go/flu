@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"io"
-	"io/ioutil"
-
-	"golang.org/x/text/encoding"
 
 	yaml "gopkg.in/yaml.v3"
 )
 
+// JSON encodes/decodes the provided value using JSON format.
 type JSON struct {
 	Value interface{}
 }
@@ -27,6 +25,7 @@ func (j JSON) ContentType() string {
 	return "application/json"
 }
 
+// XML encodes/decodes the provided value using XML format.
 type XML struct {
 	Value interface{}
 }
@@ -43,26 +42,18 @@ func (x XML) ContentType() string {
 	return "application/xml"
 }
 
+// PlainText encodes/decodes the provided value as plain text.
 type PlainText struct {
-	Value    string
-	Encoding encoding.Encoding
+	Value string
 }
 
 func (t *PlainText) EncodeTo(w io.Writer) error {
-	if t.Encoding != nil {
-		w = t.Encoding.NewEncoder().Writer(w)
-	}
-
 	_, err := io.WriteString(w, t.Value)
 	return err
 }
 
 func (t *PlainText) DecodeFrom(r io.Reader) error {
-	if t.Encoding != nil {
-		r = t.Encoding.NewDecoder().Reader(r)
-	}
-
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}
@@ -74,14 +65,18 @@ func (t *PlainText) ContentType() string {
 	return "text/plain; charset=utf-8"
 }
 
+// YAML encodes/decodes the provided value using YAML format.
 type YAML struct {
 	Value interface{}
 }
 
 func (y YAML) EncodeTo(w io.Writer) error {
 	enc := yaml.NewEncoder(w)
-	defer enc.Close()
-	return enc.Encode(y.Value)
+	if err := enc.Encode(y.Value); err != nil {
+		return err
+	}
+
+	return enc.Close()
 }
 
 func (y YAML) DecodeFrom(r io.Reader) error {

@@ -9,26 +9,13 @@ type WaitGroup struct {
 	sync.WaitGroup
 }
 
-func (wg *WaitGroup) Go(ctx context.Context, rateLimiter RateLimiter, fun func(ctx context.Context)) func() {
-	if rateLimiter == nil {
-		rateLimiter = RateUnlimiter
-	}
-
+func (wg *WaitGroup) Go(ctx context.Context, fun func(ctx context.Context)) func() {
 	wg.Add(1)
 	ctx, cancel := context.WithCancel(ctx)
-	go func(ctx context.Context, cancel func(), rateLimiter RateLimiter) {
-		defer func() {
-			cancel()
-			wg.Done()
-		}()
-
-		if err := rateLimiter.Start(ctx); err != nil {
-			return
-		}
-
-		defer rateLimiter.Complete()
+	go func(ctx context.Context, cancel func()) {
+		defer wg.Done()
+		defer cancel()
 		fun(ctx)
-	}(ctx, cancel, rateLimiter)
-
+	}(ctx, cancel)
 	return cancel
 }

@@ -75,8 +75,8 @@ func TestClient_GET_StatusCodeError(t *testing.T) {
 		CheckStatus(http.StatusOK).
 		Error
 	assert.Equal(t, fluhttp.StatusCodeError{
-		Code: http.StatusInternalServerError,
-		Text: "request failed",
+		StatusCode:   http.StatusInternalServerError,
+		ResponseBody: flu.Bytes("request failed"),
 	}, err, "client 3 error")
 }
 
@@ -185,8 +185,8 @@ func TestClient_POST_MultipartFormData(t *testing.T) {
 
 	defer server.Close()
 
-	buf := flu.NewBuffer()
-	_, _ = buf.WriteString("TESTE")
+	buf := new(flu.ByteBuffer)
+	_, _ = buf.Unmask().WriteString("TESTE")
 	err := client.POST(server.URL).
 		BodyEncoder(fluhttp.NewMultipartForm().
 			Value(Post{

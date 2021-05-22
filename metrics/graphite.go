@@ -141,7 +141,7 @@ func NewGraphiteClient(address string, interval time.Duration) *GraphiteClient {
 	}
 
 	if interval > 0 {
-		client.cancel = client.work.Go(ctx, nil, func(ctx context.Context) {
+		client.cancel = client.work.Go(ctx, func(ctx context.Context) {
 			timer := time.NewTimer(interval)
 			defer func() {
 				timer.Stop()

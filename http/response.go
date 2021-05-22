@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -31,27 +32,28 @@ func (r *Response) HandleResponse(handler ResponseHandler) *Response {
 }
 
 type StatusCodeError struct {
-	Code int
-	Text string
+	StatusCode   int
+	ResponseBody flu.Bytes
 }
 
 func (e StatusCodeError) Error() string {
-	text := fmt.Sprintf("%d", e.Code)
-	if e.Text != "" {
-		text += " (" + e.Text + ")"
+	text := fmt.Sprintf("%d", e.StatusCode)
+	if len(e.ResponseBody) > 0 {
+		body := string(e.ResponseBody)
+		text += " (" + body + ")"
 	}
 
 	return text
 }
 
 func NewStatusCodeError(r *http.Response) StatusCodeError {
-	e := StatusCodeError{Code: r.StatusCode}
+	e := StatusCodeError{StatusCode: r.StatusCode}
 	if r.Body != nil {
-		text := &flu.PlainText{Value: ""}
-		if err := flu.DecodeFrom(flu.IO{R: r.Body}, text); err != nil {
-			e.Text = fmt.Sprintf("response body read error: %s", err.Error())
+		body := new(flu.ByteBuffer)
+		if _, err := flu.Copy(flu.IO{R: r.Body}, body); err != nil {
+			log.Printf("Failed to read response body from %s: %s", r.Request.URL, err)
 		} else {
-			e.Text = text.Value
+			e.ResponseBody = body.Bytes()
 		}
 	}
 
@@ -115,19 +117,12 @@ func (r *Response) Reader() (io.Reader, error) {
 	return h.reader, err
 }
 
-type WritableError struct {
-	Err error
-}
-
-func (e WritableError) Error() string {
-	return fmt.Sprintf("failed to create writer: %s", e.Err)
-}
-
 func (r *Response) DecodeBodyTo(out flu.Output) *Response {
 	if r.Error != nil {
 		return r
 	}
-	return r.complete(flu.Copy(flu.IO{R: r.Body}, out))
+	_, err := flu.Copy(flu.IO{R: r.Body}, out)
+	return r.complete(err)
 }
 
 func (r *Response) complete(err error) *Response {

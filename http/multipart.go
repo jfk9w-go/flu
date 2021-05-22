@@ -88,7 +88,7 @@ func (mf *MultipartForm) EncodeTo(w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		err = flu.Copy(file.input, flu.IO{W: w})
+		_, err = flu.Copy(file.input, flu.IO{W: w})
 		if err != nil {
 			return err
 		}
